@@ -71,9 +71,11 @@ def main(args):
 
         loss_fun = nn.MSELoss()
         optimizer = optim.AdamW(model.parameters(), lr=args.lr)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         train_metrics, valid_metrics = train(model, train_dataloader,
                                              valid_dataloader, loss_fun,
-                                             optimizer, num_epochs=num_epoch,
+                                             optimizer, device, num_epochs=num_epoch,
                                              patience=pacience)
 
 

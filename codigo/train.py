@@ -6,7 +6,7 @@ from data_loaders import DataSetMRIs
 import sys
 import torchio as tio
 import numpy as np
-from sklearn.metrics import mean_absolute_error, mean_squared_error, root_mean_squared_error, r2_score
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from early_stopper import EarlyStopping
 
 
@@ -45,7 +45,6 @@ def evaluate_loader(model, dataloader, device):
 
     metrics['MSE']  =  mean_squared_error(reals, predicted)
     metrics['MAE']  =  mean_absolute_error(reals, predicted)
-    metrics['RMSE'] =  root_mean_squared_error(reals, predicted)
     metrics['R2']   =  r2_score(reals, predicted)
 
     return metrics
@@ -54,8 +53,8 @@ def evaluate_loader(model, dataloader, device):
 def train(model, train_loader, valid_loader, loss_function, optimizer, device,
           num_epochs=25, patience=5, verbose_percent=0.3):
 
-    train_metrics = { 'MSE':[],'MAE':[],'RMSE':[],'R2':[], }
-    valid_metrics = { 'MSE':[],'MAE':[],'RMSE':[],'R2':[], }
+    train_metrics = { 'MSE':[],'MAE':[],'R2':[] }
+    valid_metrics = { 'MSE':[],'MAE':[],'R2':[] }
     early_stoper = EarlyStopping(patience=patience)
 
     for epoch in range(num_epochs):
