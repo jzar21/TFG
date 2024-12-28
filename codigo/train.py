@@ -11,7 +11,7 @@ from early_stopper import EarlyStopping
 
 
 def train_one_epoch(model, dataloader_train,
-                    optimizer, loss_function, device,verbose_percentaje=0.3):
+                    optimizer, loss_function, device, verbose_percentaje=0.3):
     model.train()
     percentage_info = int(verbose_percentaje * len(dataloader_train))
     avg_batch_loses = []
@@ -28,7 +28,8 @@ def train_one_epoch(model, dataloader_train,
         avg_batch_loses.append(loss / im.shape[0])
 
         if i % percentage_info == 0:
-            print(f'\033[32mBatch[{i}/{len(dataloader_train)}] loss: {loss.item():.4f}\033[0m')
+            print(
+                f'\033[32mBatch[{i}/{len(dataloader_train)}] loss: {loss.item():.4f}\033[0m')
 
     return np.array(avg_batch_loses)
 
@@ -38,14 +39,14 @@ def evaluate_loader(model, dataloader, device):
     metrics = {}
     predicted = []
     reals = []
-    for im, label in enumerate(dataloader):
+    for im, label in dataloader:
         im, label = im.to(device), label.to(device)
-        predicted.extend(model(im).cpu().numpy().tolist())
+        predicted.extend(model(im).detach().cpu().numpy().tolist())
         reals.extend(label.cpu().numpy().tolist())
 
-    metrics['MSE']  =  mean_squared_error(reals, predicted)
-    metrics['MAE']  =  mean_absolute_error(reals, predicted)
-    metrics['R2']   =  r2_score(reals, predicted)
+    metrics['MSE'] = mean_squared_error(reals, predicted)
+    metrics['MAE'] = mean_absolute_error(reals, predicted)
+    metrics['R2'] = r2_score(reals, predicted)
 
     return metrics
 
@@ -53,8 +54,8 @@ def evaluate_loader(model, dataloader, device):
 def train(model, train_loader, valid_loader, loss_function, optimizer, device,
           num_epochs=25, patience=5, verbose_percent=0.3):
 
-    train_metrics = { 'MSE':[],'MAE':[],'R2':[] }
-    valid_metrics = { 'MSE':[],'MAE':[],'R2':[] }
+    train_metrics = {'MSE': [], 'MAE': [], 'R2': []}
+    valid_metrics = {'MSE': [], 'MAE': [], 'R2': []}
     early_stoper = EarlyStopping(patience=patience)
 
     for epoch in range(num_epochs):
@@ -69,16 +70,15 @@ def train(model, train_loader, valid_loader, loss_function, optimizer, device,
 
         for item, values in train_evaluation.items():
             print(f'Train {item}: {values}')
-            train_metrics[item].extend(values)
+            train_metrics[item].append(values)
 
         for item, values in valid_evaluation.items():
             print(f'Valid {item}: {values}')
-            valid_metrics[item].extend(values)
+            valid_metrics[item].append(values)
 
         if early_stoper(valid_metrics['MSE'][-1], model):
             print('Early stopping!!')
             early_stoper.load_best_model(model)
-
 
     print(f"Train completed")
 

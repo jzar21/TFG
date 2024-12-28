@@ -58,7 +58,7 @@ def make_plots(data_train, data_val, time):
         plt.tight_layout()
         plt.grid(True)
         plt.legend()
-        plt.savefig(f'{item}_{time}.png', dpi=600)
+        plt.savefig(f'./graficas/{item}_{time}.png', dpi=600)
 
 
 def adapt_model(model):
@@ -106,10 +106,10 @@ def main(args):
                                              optimizer, device, num_epochs=num_epoch,
                                              patience=pacience)
 
-        time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         torch.save(model, f'./modelos_entrenados/model_{time}.pth')
 
-        make_plots(train_metrics, valid_metrics)
+        make_plots(train_metrics, valid_metrics, time)
 
         print('Finished!!')
 
