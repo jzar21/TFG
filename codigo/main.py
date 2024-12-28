@@ -59,6 +59,7 @@ def make_plots(data_train, data_val, time):
         plt.grid(True)
         plt.legend()
         plt.savefig(f'./graficas/{item}_{time}.png', dpi=600)
+        plt.close()
 
 
 def adapt_model(model):
