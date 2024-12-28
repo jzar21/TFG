@@ -5,27 +5,47 @@ import torch.nn as nn
 import torch.optim as optim
 from data_loaders import DataSetMRIs
 from torch.utils.data import DataLoader
-from datatime import datetime
+from datetime import datetime
 import torchvision
 import torchio as tio
 import seaborn as sns
 import matplotlib.pyplot as plt
+from create_model import ResNet3D_Regresion
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--data_train', type=str, help='Folder with the data for training')
-    parser.add_argument('--data_valid', type=str, help='Folder with the data for validation')
-    parser.add_argument('--data_test', type=str, help='Folder with the data for test')
-    parser.add_argument('--mn_model_path', type=str, help='Medical Net model to Use')
+    parser.add_argument('--data_train', type=str,
+                        help='Folder with the data for training')
+
+    parser.add_argument('--data_valid', type=str,
+                        help='Folder with the data for validation')
+
+    parser.add_argument('--data_test', type=str,
+                        help='Folder with the data for test')
+
+    parser.add_argument('--mn_model_path', type=str,
+                        help='Medical Net model to Use')
+
     parser.add_argument('--batch', type=int, default=32, help='Batch size')
-    parser.add_argument('--num_epochs', type=int, default=25, help='Num Epochs')
-    parser.add_argument('--pacience', type=int, default=5, help='Patience of early stopper')
-    parser.add_argument('--train', type=bool, default=True, help='If train or evaluate')
-    parser.add_argument('--model_path', type=str, help='Path to the model, only used if train is false')
-    parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
+
+    parser.add_argument('--num_epochs', type=int,
+                        default=25, help='Num Epochs')
+
+    parser.add_argument('--pacience', type=int, default=5,
+                        help='Patience of early stopper')
+
+    parser.add_argument('--train', type=bool, default=True,
+                        help='If train or evaluate')
+
+    parser.add_argument('--model_path', type=str,
+                        help='Path to the model, only used if train is false')
+
+    parser.add_argument('--lr', type=float, default=0.001,
+                        help='Learning rate')
 
     return parser.parse_args()
+
 
 def make_plots(data_train, data_val, time):
     for item, _ in data_train.items():
@@ -40,10 +60,12 @@ def make_plots(data_train, data_val, time):
         plt.legend()
         plt.savefig(f'{item}_{time}.png', dpi=600)
 
+
 def adapt_model(model):
     in_features = model.fc.in_features
     model.fc = nn.Linear(in_features, 1)
     return model
+
 
 def main(args):
     train_folder = args.data_train
@@ -54,8 +76,14 @@ def main(args):
     pacience = args.pacience
 
     if args.train:
-        model = torch.load(args.mn_model_path)
-        model = adapt_model(model)
+        model = ResNet3D_Regresion(
+            layers=[1, 1, 1, 1],
+            sample_input_D=64,
+            sample_input_H=128,
+            sample_input_W=128,
+            num_output=1,
+            shortcut_type='B'
+        )
 
         transform = torchvision.transforms.Compose([
             tio.Resize((32, 128, 128)),
@@ -78,16 +106,12 @@ def main(args):
                                              optimizer, device, num_epochs=num_epoch,
                                              patience=pacience)
 
-
         time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         torch.save(model, f'./modelos_entrenados/model_{time}.pth')
 
         make_plots(train_metrics, valid_metrics)
 
         print('Finished!!')
-
-
-
 
 
 if __name__ == '__main__':
