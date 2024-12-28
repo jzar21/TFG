@@ -5,38 +5,83 @@ import monai
 from data_loaders import DataSetMRIs
 import sys
 import torchio as tio
+import numpy as np
+from sklearn.metrics import mean_absolute_error, mean_squared_error, root_mean_squared_error, r2_score
+from early_stopper import EarlyStopping
 
 
-def train(model, train_loader, train_ds, device):
-    loss_function = torch.nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), 1e-4)
+def train_one_epoch(model, dataloader_train,
+                    optimizer, loss_function, device,verbose_percentaje=0.3):
+    model.train()
+    percentage_info = int(verbose_percentaje * len(dataloader_train))
+    avg_batch_loses = []
 
-    epoch_loss_values = list()
+    for i, (im, label) in enumerate(dataloader_train):
+        im, label = im.to(device), label.to(device)
 
-    for epoch in range(5):
+        optimizer.zero_grad()
+        outputs = model(im)
+        loss = loss_function(outputs, label)
+        loss.backward()
+        optimizer.step()
+
+        avg_batch_loses.append(loss / im.shape[0])
+
+        if i % percentage_info == 0:
+            print(f'\033[32mBatch[{i}/{len(dataloader_train)}] loss: {loss.item():.4f}\033[0m')
+
+    return np.array(avg_batch_loses)
+
+
+def evaluate_loader(model, dataloader, device):
+    model.eval()
+    metrics = {}
+    predicted = []
+    reals = []
+    for im, label in enumerate(dataloader):
+        im, label = im.to(device), label.to(device)
+        predicted.extend(model(im).cpu().numpy().tolist())
+        reals.extend(label.cpu().numpy().tolist())
+
+    metrics['MSE']  =  mean_squared_error(reals, predicted)
+    metrics['MAE']  =  mean_absolute_error(reals, predicted)
+    metrics['RMSE'] =  root_mean_squared_error(reals, predicted)
+    metrics['R2']   =  r2_score(reals, predicted)
+
+    return metrics
+
+
+def train(model, train_loader, valid_loader, loss_function, optimizer, device,
+          num_epochs=25, patience=5, verbose_percent=0.3):
+
+    train_metrics = { 'MSE':[],'MAE':[],'RMSE':[],'R2':[], }
+    valid_metrics = { 'MSE':[],'MAE':[],'RMSE':[],'R2':[], }
+    early_stoper = EarlyStopping(patience=patience)
+
+    for epoch in range(num_epochs):
         print("-" * 50)
-        print(f"epoch {epoch + 1}/{5}")
-        model.train()
-        epoch_loss = 0
-        step = 0
-        for im, label in train_loader:
-            step += 1
-            im, label = im.to(device), label.to(device)
-            optimizer.zero_grad()
-            outputs = model(im)
-            loss = loss_function(outputs, label)
-            loss.backward()
-            optimizer.step()
-            epoch_loss += loss.item()
+        print(f"Epoch {epoch + 1}/{num_epochs}")
 
-            epoch_len = len(train_ds) // train_loader.batch_size
-            print(f"{step}/{epoch_len}, train_loss: {loss.item():.4f}")
+        avg_batch_loses = train_one_epoch(model, train_loader, optimizer,
+                                          loss_function, device, verbose_percentaje=verbose_percent)
 
-        epoch_loss /= step
-        epoch_loss_values.append(epoch_loss)
-        print(f"epoch {epoch + 1} average loss: {epoch_loss:.4f}")
+        train_evaluation = evaluate_loader(model, train_loader, device)
+        valid_evaluation = evaluate_loader(model, valid_loader, device)
 
-    print(f"train completed")
+        for item, values in train_evaluation.items():
+            print(f'Train {item}: {values}')
+            train_metrics[item].extend(values)
+
+        for item, values in valid_evaluation.items():
+            print(f'Valid {item}: {values}')
+            valid_metrics[item].extend(values)
+
+        if early_stoper(valid_metrics['MSE'][-1], model):
+            print('Early stopping!!')
+            early_stoper.load_best_model(model)
+
+
+    print(f"Train completed")
 
 
 def main(data_folder: str):
