@@ -83,6 +83,8 @@ def train(model, train_loader, valid_loader, loss_function, optimizer, device,
 
     print(f"Train completed")
 
+    return train_metrics, valid_metrics
+
 
 def main(data_folder: str):
     transform = torchvision.transforms.Compose([

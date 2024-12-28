@@ -1,21 +1,93 @@
 import argparse
+from train import train, evaluate_loader
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from data_loaders import DataSetMRIs
+from torch.utils.data import DataLoader
+from datatime import datetime
+import torchvision
+import torchio as tio
+import seaborn as sns
+import matplotlib.pyplot as plt
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--data', type=str, help='Folder with the data')
-    parser.add_argument('--model', type=str, help='Model to use')
+    parser.add_argument('--data_train', type=str, help='Folder with the data for training')
+    parser.add_argument('--data_valid', type=str, help='Folder with the data for validation')
+    parser.add_argument('--data_test', type=str, help='Folder with the data for test')
+    parser.add_argument('--mn_model_path', type=str, help='Medical Net model to Use')
     parser.add_argument('--batch', type=int, default=32, help='Batch size')
-    parser.add_argument('--epoch', type=int, default=25, help='Num Epochs')
+    parser.add_argument('--num_epochs', type=int, default=25, help='Num Epochs')
+    parser.add_argument('--pacience', type=int, default=5, help='Patience of early stopper')
     parser.add_argument('--train', type=bool, default=True, help='If train or evaluate')
+    parser.add_argument('--model_path', type=str, help='Path to the model, only used if train is false')
+    parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
 
     return parser.parse_args()
 
-def main():
-    pass
+def make_plots(data_train, data_val, time):
+    for item, _ in data_train.items():
+        sns.lineplot(data_train[item], label='Train')
+        sns.lineplot(data_val[item], label='Valid')
+
+        plt.title(f'Evolución de {item}')
+        plt.xlabel('Épocas')
+        plt.ylabel('Pérdida')
+        plt.tight_layout()
+        plt.grid(True)
+        plt.legend()
+        plt.savefig(f'{item}_{time}.png', dpi=600)
+
+def adapt_model(model):
+    in_features = model.fc.in_features
+    model.fc = nn.Linear(in_features, 1)
+    return model
+
+def main(args):
+    train_folder = args.data_train
+    valid_folder = args.data_valid
+    test_folder = args.data_test
+    batch_size = args.batch
+    num_epoch = args.num_epochs
+    pacience = args.pacience
+
+    if args.train:
+        model = torch.load(args.mn_model_path)
+        model = adapt_model(model)
+
+        transform = torchvision.transforms.Compose([
+            tio.Resize((32, 128, 128)),
+        ])
+
+        train_ds = DataSetMRIs(train_folder, transform=transform)
+        valid_ds = DataSetMRIs(valid_folder, transform=transform)
+        test_ds = DataSetMRIs(test_folder, transform=transform)
+
+        train_dataloader = DataLoader(train_ds, batch_size=batch_size)
+        valid_dataloader = DataLoader(valid_ds, batch_size=batch_size)
+        test_dataloader = DataLoader(test_ds, batch_size=batch_size)
+
+        loss_fun = nn.MSELoss()
+        optimizer = optim.AdamW(model.parameters(), lr=args.lr)
+        train_metrics, valid_metrics = train(model, train_dataloader,
+                                             valid_dataloader, loss_fun,
+                                             optimizer, num_epochs=num_epoch,
+                                             patience=pacience)
+
+
+        time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        torch.save(model, f'./modelos_entrenados/model_{time}.pth')
+
+        make_plots(train_metrics, valid_metrics)
+
+        print('Finished!!')
+
+
+
 
 
 if __name__ == '__main__':
-
     args = parse_args()
-
-    main()
+    main(args)
