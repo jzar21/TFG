@@ -79,6 +79,7 @@ def train(model, train_loader, valid_loader, loss_function, optimizer, device,
         if early_stoper(valid_metrics['MSE'][-1], model):
             print('Early stopping!!')
             early_stoper.load_best_model(model)
+            break
 
     print(f"Train completed")
 
