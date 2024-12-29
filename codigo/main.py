@@ -127,7 +127,8 @@ def main(args):
                                              patience=pacience)
 
         time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-        torch.save(model, f'./modelos_entrenados/model_{time}.pth')
+        torch.save(
+            model, f'./modelos_entrenados/{args.mn_model_path}_{time}.pth')
 
         make_plots(train_metrics, valid_metrics, time)
 
