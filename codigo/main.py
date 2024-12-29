@@ -11,6 +11,9 @@ import torchio as tio
 import seaborn as sns
 import matplotlib.pyplot as plt
 from create_model import ResNet3D_Regresion
+from torchsummary import summary
+import re
+import sys
 
 
 def parse_args():
@@ -62,9 +65,29 @@ def make_plots(data_train, data_val, time):
         plt.close()
 
 
-def adapt_model(model):
-    in_features = model.fc.in_features
-    model.fc = nn.Linear(in_features, 1)
+def load_pretrained_model(pretrain_path):
+    match = re.search(r"resnet_(\d+)", pretrain_path)
+
+    if match:
+        model_depth = int(match.group(1))
+    else:
+        print("Model depth not found, please the format: rester_dethp*",
+              file=sys.stderr)
+
+        return None
+
+    model = ResNet3D_Regresion(model_depth)
+    checkpoint = torch.load(pretrain_path)
+    state_dict = checkpoint['state_dict']
+    state_dict = {k.replace('module.', 'model.')
+                            : v for k, v in state_dict.items()}
+    model.load_state_dict(state_dict, strict=False)
+
+    print('-' * 50)
+    print('Summary for entrance of size (1, 20, 100, 100)')
+    print(summary(model, (1, 20, 100, 100)))
+    print('-' * 50)
+
     return model
 
 
@@ -78,7 +101,7 @@ def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if args.train:
-        model = ResNet3D_Regresion(model_depth=10)
+        model = load_pretrained_model(args.mn_model_path)
 
         model.to(device)
 
