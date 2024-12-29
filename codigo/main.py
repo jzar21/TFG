@@ -78,14 +78,7 @@ def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if args.train:
-        model = ResNet3D_Regresion(
-            layers=[1, 1, 1, 1],
-            sample_input_D=25,
-            sample_input_H=350,
-            sample_input_W=350,
-            num_output=1,
-            shortcut_type='B'
-        )
+        model = ResNet3D_Regresion(model_depth=10)
 
         model.to(device)
 
