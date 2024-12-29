@@ -20,16 +20,16 @@ def train_one_epoch(model, dataloader_train,
         im, label = im.to(device), label.to(device)
 
         optimizer.zero_grad()
-        outputs = model(im)
+        outputs = model(im).view(-1)  # (batch_size, 1) a (batch_size)
         loss = loss_function(outputs, label)
         loss.backward()
         optimizer.step()
 
-        avg_batch_loses.append(loss / im.shape[0])
+        avg_batch_loses.append(loss.item() / im.shape[0])
 
-        if i % percentage_info == 0:
-            print(
-                f'\033[32mBatch[{i}/{len(dataloader_train)}] loss: {loss.item():.4f}\033[0m')
+        # if i % percentage_info == 0:
+        print(
+            f'\033[32mBatch[{i}/{len(dataloader_train)}] loss: {loss.item():.4f}\033[0m')
 
     return np.array(avg_batch_loses)
 
@@ -41,7 +41,7 @@ def evaluate_loader(model, dataloader, device):
     reals = []
     for im, label in dataloader:
         im, label = im.to(device), label.to(device)
-        predicted.extend(model(im).detach().cpu().numpy().tolist())
+        predicted.extend(model(im).view(-1).detach().cpu().numpy().tolist())
         reals.extend(label.cpu().numpy().tolist())
 
     metrics['MSE'] = mean_squared_error(reals, predicted)

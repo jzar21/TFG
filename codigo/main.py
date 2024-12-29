@@ -80,9 +80,9 @@ def main(args):
     if args.train:
         model = ResNet3D_Regresion(
             layers=[1, 1, 1, 1],
-            sample_input_D=64,
-            sample_input_H=128,
-            sample_input_W=128,
+            sample_input_D=25,
+            sample_input_H=350,
+            sample_input_W=350,
             num_output=1,
             shortcut_type='B'
         )

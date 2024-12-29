@@ -21,10 +21,13 @@ class ResNet3D_Regresion(ResNet):
                                                  shortcut_type=shortcut_type,
                                                  no_cuda=no_cuda)
 
+        self.poll = nn.AdaptiveAvgPool3d(
+            (1, self.inplanes, Bottleneck.expansion))
         self.fc = nn.Linear(self.inplanes * Bottleneck.expansion, num_output)
 
     def forward(self, x):
         x = super(ResNet3D_Regresion, self).forward(x)
+        x = self.poll(x)
         x = x.view(x.size(0), -1)
         x = self.fc(x)
         return x
