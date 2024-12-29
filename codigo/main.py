@@ -86,8 +86,9 @@ def main(args):
             shortcut_type='B'
         )
 
-        transform = torchvision.transforms.Compose([
-            tio.Resize((32, 128, 128)),
+        transform = tio.Compose([
+            tio.Resample((1.0, 1.0, 1.0)),
+            tio.CropOrPad((25, 350, 350))
         ])
 
         train_ds = DataSetMRIs(train_folder, transform=transform)

@@ -40,12 +40,17 @@ class DataSetMRIs(Dataset):
         mri_path = self.mris_paths[idx]
 
         full_mri_img = []
+        mri_order = []
         age = -1
         for dicom in os.listdir(mri_path):
             dicom_path = os.path.join(mri_path, dicom)
             dcm = pydicom.dcmread(dicom_path)
             full_mri_img.append(np.array(dcm.pixel_array))
             age = dcm.PatientAge
+            mri_order.append(dcm.InstanceNumber)
+
+        index = np.argsort(mri_order)
+        full_mri_img = [full_mri_img[i] for i in index]
 
         tensor_mri = np.stack(full_mri_img)
         tensor_mri = np.expand_dims(tensor_mri, axis=0)
