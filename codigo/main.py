@@ -75,6 +75,7 @@ def main(args):
     batch_size = args.batch
     num_epoch = args.num_epochs
     pacience = args.pacience
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if args.train:
         model = ResNet3D_Regresion(
@@ -85,6 +86,8 @@ def main(args):
             num_output=1,
             shortcut_type='B'
         )
+
+        model.to(device)
 
         transform = tio.Compose([
             tio.Resample((1.0, 1.0, 1.0)),
@@ -101,7 +104,6 @@ def main(args):
 
         loss_fun = nn.MSELoss()
         optimizer = optim.AdamW(model.parameters(), lr=args.lr)
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         train_metrics, valid_metrics = train(model, train_dataloader,
                                              valid_dataloader, loss_fun,
