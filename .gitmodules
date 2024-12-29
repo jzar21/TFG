@@ -1,0 +1,6 @@
+[submodule "codigo/MedicalNet"]
+	path = codigo/MedicalNet
+	url = https://github.com/Tencent/MedicalNet.git
+[submodule "codigo/resnets_3d"]
+	path = codigo/resnets_3d
+	url = https://github.com/kenshohara/3D-ResNets-PyTorch.git
