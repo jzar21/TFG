@@ -14,6 +14,9 @@ from create_model import ResNet3D_Regresion
 from torchsummary import summary
 import re
 import sys
+import scienceplots
+
+plt.style.use(['science', 'ieee', 'grid'])
 
 
 def parse_args():
@@ -128,7 +131,7 @@ def main(args):
 
         time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         torch.save(
-            model, f'./modelos_entrenados/{args.mn_model_path}_{time}.pth')
+            model, f'./modelos_entrenados/{args.mn_model_path}_{num_epoch}_{time}.pth')
 
         make_plots(train_metrics, valid_metrics, time)
 
