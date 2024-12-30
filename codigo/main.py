@@ -16,7 +16,7 @@ import re
 import sys
 import scienceplots
 
-plt.style.use(['science', 'ieee', 'grid'])
+plt.style.use(['science', 'ieee', 'grid', 'no-latex'])
 
 
 def parse_args():
@@ -55,15 +55,15 @@ def parse_args():
 
 def make_plots(data_train, data_val, time):
     for item, _ in data_train.items():
-        sns.lineplot(data_train[item], label='Train')
-        sns.lineplot(data_val[item], label='Valid')
+        plt.plot(data_train[item], label='Train')
+        plt.plot(data_val[item], label='Valid')
 
         plt.title(f'Evolución de {item}')
         plt.xlabel('Épocas')
         plt.ylabel('Pérdida')
         plt.tight_layout()
         plt.grid(True)
-        plt.legend()
+        plt.legend(loc='best')
         plt.savefig(f'./graficas/{item}_{time}.png', dpi=600)
         plt.close()
 
