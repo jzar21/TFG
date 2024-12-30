@@ -58,11 +58,15 @@ def make_plots(data_train, data_val, time):
         plt.plot(data_train[item], label='Train')
         plt.plot(data_val[item], label='Valid')
 
-        plt.title(f'Evolución de {item}')
-        plt.xlabel('Épocas')
-        plt.ylabel('Pérdida')
+        if item == 'R2':
+            plt.title('Evolucion de $R^2$')
+        else:
+            plt.title(f'Evolucion de {item}')
+
+        plt.xlabel('Epocas')
+        # plt.ylabel('Pérdida')
         plt.tight_layout()
-        plt.grid(True)
+        # plt.grid(True)
         plt.legend(loc='best')
         plt.savefig(f'./graficas/{item}_{time}.png', dpi=600)
         plt.close()
