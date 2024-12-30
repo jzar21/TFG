@@ -72,7 +72,7 @@ def make_plots(data_train, data_val, time):
         plt.close()
 
 
-def load_pretrained_model(pretrain_path):
+def load_pretrained_model(pretrain_path, device):
     match = re.search(r"resnet_(\d+)", pretrain_path)
 
     if match:
@@ -83,7 +83,7 @@ def load_pretrained_model(pretrain_path):
 
         return None
 
-    model = ResNet3D_Regresion(model_depth)
+    model = ResNet3D_Regresion(model_depth).to(device)
     checkpoint = torch.load(pretrain_path)
     state_dict = checkpoint['state_dict']
     state_dict = {k.replace('module.', 'model.')
@@ -108,7 +108,7 @@ def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if args.train:
-        model = load_pretrained_model(args.mn_model_path)
+        model = load_pretrained_model(args.mn_model_path, device)
 
         model.to(device)
 
