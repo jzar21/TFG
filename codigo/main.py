@@ -86,16 +86,16 @@ def load_pretrained_model(pretrain_path, device):
     model = ResNet3D_Regresion(model_depth).to(device)
     checkpoint = torch.load(pretrain_path)
     state_dict = checkpoint['state_dict']
-    state_dict = {k.replace('module.', 'model.')
-                            : v for k, v in state_dict.items()}
+    state_dict = {k.replace('module.', 'model.'): v for k, v in state_dict.items()}
     model.load_state_dict(state_dict, strict=False)
 
     print('-' * 50)
-    print('Summary for entrance of size (1, 20, 100, 100)')
+    print(
+        f'Summary for entrance of size (1, 20, 100, 100), depth {model_depth}')
     print(summary(model, (1, 20, 100, 100)))
     print('-' * 50)
 
-    return model
+    return model, model_depth
 
 
 def main(args):
@@ -108,22 +108,25 @@ def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if args.train:
-        model = load_pretrained_model(args.mn_model_path, device)
+        model, model_depth = load_pretrained_model(args.mn_model_path, device)
 
         model.to(device)
 
         transform = tio.Compose([
             tio.Resample((1.0, 1.0, 1.0)),
-            tio.CropOrPad((25, 350, 350))
+            tio.CropOrPad((20, 250, 250))
         ])
 
         train_ds = DataSetMRIs(train_folder, transform=transform)
         valid_ds = DataSetMRIs(valid_folder, transform=transform)
         test_ds = DataSetMRIs(test_folder, transform=transform)
 
-        train_dataloader = DataLoader(train_ds, batch_size=batch_size)
-        valid_dataloader = DataLoader(valid_ds, batch_size=batch_size)
-        test_dataloader = DataLoader(test_ds, batch_size=batch_size)
+        train_dataloader = DataLoader(
+            train_ds, batch_size=batch_size, shuffle=True)
+        valid_dataloader = DataLoader(
+            valid_ds, batch_size=batch_size, shuffle=True)
+        test_dataloader = DataLoader(
+            test_ds, batch_size=batch_size, shuffle=True)
 
         loss_fun = nn.MSELoss()
         optimizer = optim.AdamW(model.parameters(), lr=args.lr)
@@ -135,7 +138,7 @@ def main(args):
 
         time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         torch.save(
-            model, f'./modelos_entrenados/{args.mn_model_path}_{num_epoch}_{time}.pth')
+            model, f'./modelos_entrenados/resnet_{model_depth}_{num_epoch}_{time}.pth')
 
         make_plots(train_metrics, valid_metrics, time)
 
