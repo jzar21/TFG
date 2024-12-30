@@ -86,7 +86,8 @@ def load_pretrained_model(pretrain_path, device):
     model = ResNet3D_Regresion(model_depth).to(device)
     checkpoint = torch.load(pretrain_path)
     state_dict = checkpoint['state_dict']
-    state_dict = {k.replace('module.', 'model.'): v for k, v in state_dict.items()}
+    state_dict = {k.replace('module.', 'model.')
+                            : v for k, v in state_dict.items()}
     model.load_state_dict(state_dict, strict=False)
 
     print('-' * 50)
@@ -96,6 +97,24 @@ def load_pretrained_model(pretrain_path, device):
     print('-' * 50)
 
     return model, model_depth
+
+
+def plot_predictions(model, dataloader, title, save_path, device):
+    model.eval()
+    predicted = []
+    reals = []
+    for im, label in dataloader:
+        im, label = im.to(device), label.to(device)
+        predicted.extend(model(im).view(-1).detach().cpu().numpy().tolist())
+        reals.extend(label.cpu().numpy().tolist())
+
+    plt.scatter(predicted, reals)
+    plt.xlabel('Prediciones')
+    plt.ylabel('Reales')
+    plt.title(title)
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=600)
+    plt.close()
 
 
 def main(args):
@@ -130,10 +149,12 @@ def main(args):
 
         loss_fun = nn.MSELoss()
         optimizer = optim.AdamW(model.parameters(), lr=args.lr)
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(
+            optimizer, max_lr=0.01, steps_per_epoch=len(train_dataloader), epochs=num_epoch)
 
         train_metrics, valid_metrics = train(model, train_dataloader,
                                              valid_dataloader, loss_fun,
-                                             optimizer, device, num_epochs=num_epoch,
+                                             optimizer, scheduler, device, num_epochs=num_epoch,
                                              patience=pacience)
 
         time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
@@ -141,6 +162,15 @@ def main(args):
             model, f'./modelos_entrenados/resnet_{model_depth}_{num_epoch}_{time}.pth')
 
         make_plots(train_metrics, valid_metrics, time)
+
+        plot_predictions(model, train_dataloader, 'Predicciones en Entrenamiento',
+                         f'./graficas/pred_train_{time}.png', device)
+
+        plot_predictions(model, valid_dataloader, 'Predicciones en Validacion',
+                         f'./graficas/pred_valid_{time}.png', device)
+
+        plot_predictions(model, test_dataloader, 'Predicciones en Test',
+                         f'./graficas/pred_test_{time}.png', device)
 
         print('Finished!!')
 

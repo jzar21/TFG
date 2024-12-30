@@ -11,7 +11,7 @@ from early_stopper import EarlyStopping
 
 
 def train_one_epoch(model, dataloader_train,
-                    optimizer, loss_function, device, verbose_percentaje=0.3):
+                    optimizer, loss_function, scheduler, device, verbose_percentaje=0.3):
     model.train()
     percentage_info = int(verbose_percentaje * len(dataloader_train))
     avg_batch_loses = []
@@ -24,6 +24,7 @@ def train_one_epoch(model, dataloader_train,
         loss = loss_function(outputs, label)
         loss.backward()
         optimizer.step()
+        scheduler.step()
 
         avg_batch_loses.append(loss.item() / im.shape[0])
 
@@ -51,7 +52,7 @@ def evaluate_loader(model, dataloader, device):
     return metrics
 
 
-def train(model, train_loader, valid_loader, loss_function, optimizer, device,
+def train(model, train_loader, valid_loader, loss_function, optimizer, scheduler, device,
           num_epochs=25, patience=5, verbose_percent=0.3):
 
     train_metrics = {'MSE': [], 'MAE': [], 'R2': []}
@@ -63,7 +64,7 @@ def train(model, train_loader, valid_loader, loss_function, optimizer, device,
         print(f"Epoch {epoch + 1}/{num_epochs}")
 
         avg_batch_loses = train_one_epoch(model, train_loader, optimizer,
-                                          loss_function, device, verbose_percentaje=verbose_percent)
+                                          loss_function, scheduler, device, verbose_percentaje=verbose_percent)
 
         train_evaluation = evaluate_loader(model, train_loader, device)
         valid_evaluation = evaluate_loader(model, valid_loader, device)
