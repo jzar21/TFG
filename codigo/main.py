@@ -150,7 +150,7 @@ def main(args):
         loss_fun = nn.MSELoss()
         optimizer = optim.AdamW(model.parameters(), lr=args.lr)
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer, max_lr=0.01, steps_per_epoch=len(train_dataloader), epochs=num_epoch)
+            optimizer, max_lr=0.001, steps_per_epoch=len(train_dataloader), epochs=num_epoch)
 
         train_metrics, valid_metrics = train(model, train_dataloader,
                                              valid_dataloader, loss_fun,
