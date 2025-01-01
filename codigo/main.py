@@ -15,6 +15,7 @@ from torchsummary import summary
 import re
 import sys
 import scienceplots
+import numpy as np
 
 plt.style.use(['science', 'ieee', 'grid', 'no-latex'])
 
@@ -103,16 +104,19 @@ def plot_predictions(model, dataloader, title, save_path, device):
     model.eval()
     predicted = []
     reals = []
+    x = np.arange(7, 27)
     for im, label in dataloader:
         im, label = im.to(device), label.to(device)
         predicted.extend(model(im).view(-1).detach().cpu().numpy().tolist())
         reals.extend(label.cpu().numpy().tolist())
 
-    plt.scatter(predicted, reals)
+    plt.scatter(predicted, reals, s=8)
+    plt.plot(x, x, color='red', label='Prediccion perfecta', ls='--')
     plt.xlabel('Prediciones')
     plt.ylabel('Reales')
     plt.title(title)
     plt.tight_layout()
+    plt.legend(loc='best')
     plt.savefig(save_path, dpi=600)
     plt.close()
 
@@ -140,11 +144,11 @@ def main(args):
         valid_ds = DataSetMRIs(valid_folder, transform=transform)
         test_ds = DataSetMRIs(test_folder, transform=transform)
 
-        train_dataloader = DataLoader(
+        train_dataloader = tio.SubjectsLoader(
             train_ds, batch_size=batch_size, shuffle=True)
-        valid_dataloader = DataLoader(
+        valid_dataloader = tio.SubjectsLoader(
             valid_ds, batch_size=batch_size, shuffle=True)
-        test_dataloader = DataLoader(
+        test_dataloader = tio.SubjectsLoader(
             test_ds, batch_size=batch_size, shuffle=True)
 
         loss_fun = nn.MSELoss()
