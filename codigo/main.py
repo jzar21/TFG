@@ -137,18 +137,20 @@ def main(args):
 
         transform = tio.Compose([
             tio.Resample((1.0, 1.0, 1.0)),
-            tio.CropOrPad((20, 250, 250))
+            tio.CropOrPad((20, 400, 400)),
+            tio.transforms.ZNormalization(),
+            # tio.transforms.RescaleIntensity(out_min_max=(0, 1))
         ])
 
         train_ds = DataSetMRIs(train_folder, transform=transform)
         valid_ds = DataSetMRIs(valid_folder, transform=transform)
         test_ds = DataSetMRIs(test_folder, transform=transform)
 
-        train_dataloader = tio.SubjectsLoader(
+        train_dataloader = DataLoader(
             train_ds, batch_size=batch_size, shuffle=True)
-        valid_dataloader = tio.SubjectsLoader(
+        valid_dataloader = DataLoader(
             valid_ds, batch_size=batch_size, shuffle=True)
-        test_dataloader = tio.SubjectsLoader(
+        test_dataloader = DataLoader(
             test_ds, batch_size=batch_size, shuffle=True)
 
         loss_fun = nn.MSELoss()
