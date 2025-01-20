@@ -51,7 +51,7 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=0.001,
                         help='Learning rate')
 
-    parser.add_argument('--lr_max', type=float, default=0.01,
+    parser.add_argument('--lr_max', type=float, default=0.1,
                         help='Max Learning rate')
 
     return parser.parse_args()

@@ -12,7 +12,7 @@ from early_stopper import EarlyStopping
 
 def train_one_epoch(model, dataloader_train,
                     optimizer, loss_function, scheduler, device,
-                    img_prev_epoch, verbose_percentaje=0.3):
+                    verbose_percentaje=0.3):
     model.train()
     percentage_info = int(verbose_percentaje * len(dataloader_train))
     avg_batch_loses = []
@@ -28,11 +28,6 @@ def train_one_epoch(model, dataloader_train,
         scheduler.step()
 
         avg_batch_loses.append(loss.item() / im.shape[0])
-        print(
-            f'Label: {label} -- Label prev: {img_prev_epoch[i][1]}, Prediccion: {outputs}')
-        print(
-            f'Max diff {torch.max(im - img_prev_epoch[i][0])} Max diff label {torch.max(label - img_prev_epoch[i][1])}')
-        img_prev_epoch[i] = (im, label)
 
         # if i % percentage_info == 0:
         print(
@@ -55,8 +50,6 @@ def evaluate_loader(model, dataloader, device):
         predicted.extend(prediction)
         reals.extend(real)
 
-        print(f'PRED: {prediction} REAL {real}')
-
     metrics['MSE'] = mean_squared_error(reals, predicted)
     metrics['MAE'] = mean_absolute_error(reals, predicted)
     metrics['R2'] = r2_score(reals, predicted)
@@ -71,15 +64,12 @@ def train(model, train_loader, valid_loader, loss_function, optimizer, scheduler
     valid_metrics = {'MSE': [], 'MAE': [], 'R2': []}
     early_stoper = EarlyStopping(patience=patience)
 
-    img_epoch_prev = [(im.to(device), label.to(device))
-                      for im, label in train_loader]
-
     for epoch in range(num_epochs):
         print("-" * 50)
         print(f"Epoch {epoch + 1}/{num_epochs}")
 
         avg_batch_loses = train_one_epoch(model, train_loader, optimizer,
-                                          loss_function, scheduler, device, img_epoch_prev,
+                                          loss_function, scheduler, device,
                                           verbose_percentaje=verbose_percent)
 
         train_evaluation = evaluate_loader(model, train_loader, device)
