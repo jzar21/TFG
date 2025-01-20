@@ -92,7 +92,8 @@ def load_pretrained_model(pretrain_path, device, from_scratch=True):
     if not from_scratch:
         checkpoint = torch.load(pretrain_path)
         state_dict = checkpoint['state_dict']
-        state_dict = {k.replace('module.', 'model.'): v for k, v in state_dict.items()}
+        state_dict = {k.replace('module.', 'model.')
+                                : v for k, v in state_dict.items()}
         model.load_state_dict(state_dict, strict=False)
 
     print('-' * 50)
@@ -111,8 +112,11 @@ def plot_predictions(model, dataloader, title, save_path, device):
     x = np.arange(7, 27)
     for im, label in dataloader:
         im, label = im.to(device), label.to(device)
-        predicted.extend(model(im).view(-1).detach().cpu().numpy().tolist())
-        reals.extend(label.cpu().numpy().tolist())
+
+        with torch.no_grad():
+            predicted.extend(
+                model(im).view(-1).detach().cpu().numpy().tolist())
+            reals.extend(label.cpu().numpy().tolist())
 
     plt.scatter(predicted, reals, s=8)
     plt.plot(x, x, color='red', label='Prediccion perfecta', ls='--')
