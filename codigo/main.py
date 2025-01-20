@@ -34,7 +34,7 @@ def parse_args():
     parser.add_argument('--mn_model_path', type=str,
                         help='Medical Net model to Use')
 
-    parser.add_argument('--batch', type=int, default=32, help='Batch size')
+    parser.add_argument('--batch', type=int, default=2, help='Batch size')
 
     parser.add_argument('--num_epochs', type=int,
                         default=25, help='Num Epochs')
@@ -50,6 +50,9 @@ def parse_args():
 
     parser.add_argument('--lr', type=float, default=0.001,
                         help='Learning rate')
+
+    parser.add_argument('--lr_max', type=float, default=0.1,
+                        help='Max Learning rate')
 
     return parser.parse_args()
 
@@ -73,7 +76,7 @@ def make_plots(data_train, data_val, time):
         plt.close()
 
 
-def load_pretrained_model(pretrain_path, device):
+def load_pretrained_model(pretrain_path, device, from_scratch=True):
     match = re.search(r"resnet_(\d+)", pretrain_path)
 
     if match:
@@ -85,11 +88,12 @@ def load_pretrained_model(pretrain_path, device):
         return None
 
     model = ResNet3D_Regresion(model_depth).to(device)
-    checkpoint = torch.load(pretrain_path)
-    state_dict = checkpoint['state_dict']
-    state_dict = {k.replace('module.', 'model.')
-                            : v for k, v in state_dict.items()}
-    model.load_state_dict(state_dict, strict=False)
+
+    if not from_scratch:
+        checkpoint = torch.load(pretrain_path)
+        state_dict = checkpoint['state_dict']
+        state_dict = {k.replace('module.', 'model.'): v for k, v in state_dict.items()}
+        model.load_state_dict(state_dict, strict=False)
 
     print('-' * 50)
     print(
@@ -121,6 +125,19 @@ def plot_predictions(model, dataloader, title, save_path, device):
     plt.close()
 
 
+def print_configuration(loss, scheduler, lr, lr_max, num_epochs, patience, optimizer, bs):
+    print('Configuration:')
+    print(f'loss {loss}')
+    print(f'scheduler {scheduler}')
+    print(f'lr {lr}')
+    print(f'lr_max {lr_max}')
+    print(f'num_epochs {num_epochs}')
+    print(f'patience {patience}')
+    print(f'optimizer {optimizer}')
+    print(f'Batch Size: {bs}')
+    print('-' * 50)
+
+
 def main(args):
     train_folder = args.data_train
     valid_folder = args.data_valid
@@ -131,9 +148,14 @@ def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if args.train:
-        model, model_depth = load_pretrained_model(args.mn_model_path, device)
+        model, model_depth = load_pretrained_model(
+            args.mn_model_path, device, from_scratch=True)
 
         model.to(device)
+
+        print('Pesos capa 0')
+        print(model.model.conv1.weight)
+        print('*' * 70)
 
         transform = tio.Compose([
             tio.Resample((1.0, 1.0, 1.0)),
@@ -147,16 +169,21 @@ def main(args):
         test_ds = DataSetMRIs(test_folder, transform=transform)
 
         train_dataloader = DataLoader(
-            train_ds, batch_size=batch_size, shuffle=True)
+            train_ds, batch_size=batch_size, shuffle=False)
         valid_dataloader = DataLoader(
-            valid_ds, batch_size=batch_size, shuffle=True)
+            valid_ds, batch_size=batch_size, shuffle=False)
         test_dataloader = DataLoader(
-            test_ds, batch_size=batch_size, shuffle=True)
+            test_ds, batch_size=batch_size, shuffle=False)
 
         loss_fun = nn.MSELoss()
+        # loss_fun = nn.L1Loss()
+        # loss_fun = nn.HuberLoss()
         optimizer = optim.AdamW(model.parameters(), lr=args.lr)
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer, max_lr=0.001, steps_per_epoch=len(train_dataloader), epochs=num_epoch)
+            optimizer, max_lr=args.lr_max, steps_per_epoch=len(train_dataloader), epochs=num_epoch)
+
+        print_configuration(loss_fun, scheduler, args.lr, args.lr_max,
+                            num_epoch, pacience, optimizer, batch_size)
 
         train_metrics, valid_metrics = train(model, train_dataloader,
                                              valid_dataloader, loss_fun,
