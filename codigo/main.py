@@ -34,7 +34,7 @@ def parse_args():
     parser.add_argument('--mn_model_path', type=str,
                         help='Medical Net model to Use')
 
-    parser.add_argument('--batch', type=int, default=2, help='Batch size')
+    parser.add_argument('--batch', type=int, default=16, help='Batch size')
 
     parser.add_argument('--num_epochs', type=int,
                         default=25, help='Num Epochs')
@@ -51,7 +51,7 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=0.001,
                         help='Learning rate')
 
-    parser.add_argument('--lr_max', type=float, default=0.1,
+    parser.add_argument('--lr_max', type=float, default=0.01,
                         help='Max Learning rate')
 
     return parser.parse_args()
@@ -105,7 +105,7 @@ def load_pretrained_model(pretrain_path, device, from_scratch=True):
 
 
 def plot_predictions(model, dataloader, title, save_path, device):
-    model.eval()
+    # model.eval()
     predicted = []
     reals = []
     x = np.arange(7, 27)

@@ -42,14 +42,20 @@ def train_one_epoch(model, dataloader_train,
 
 
 def evaluate_loader(model, dataloader, device):
-    model.eval()
+    # model.eval() maybe a bug??
     metrics = {}
     predicted = []
     reals = []
     for im, label in dataloader:
         im, label = im.to(device), label.to(device)
-        predicted.extend(model(im).view(-1).detach().cpu().numpy().tolist())
-        reals.extend(label.cpu().numpy().tolist())
+        with torch.no_grad():
+            prediction = model(im).view(-1).detach().cpu().numpy().tolist()
+            real = label.cpu().numpy().tolist()
+
+        predicted.extend(prediction)
+        reals.extend(real)
+
+        print(f'PRED: {prediction} REAL {real}')
 
     metrics['MSE'] = mean_squared_error(reals, predicted)
     metrics['MAE'] = mean_absolute_error(reals, predicted)
