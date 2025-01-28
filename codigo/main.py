@@ -129,7 +129,7 @@ def plot_predictions(model, dataloader, title, save_path, device):
     plt.close()
 
 
-def print_configuration(loss, scheduler, lr, lr_max, num_epochs, patience, optimizer, bs):
+def print_configuration(loss, scheduler, lr, lr_max, num_epochs, patience, optimizer, bs, from_scratch):
     print('Configuration:')
     print(f'loss {loss}')
     print(f'scheduler {scheduler}')
@@ -138,7 +138,8 @@ def print_configuration(loss, scheduler, lr, lr_max, num_epochs, patience, optim
     print(f'num_epochs {num_epochs}')
     print(f'patience {patience}')
     print(f'optimizer {optimizer}')
-    print(f'Batch Size: {bs}')
+    print(f'batch size: {bs}')
+    print(f'from scratch: {from_scratch}')
     print('-' * 50)
 
 
@@ -173,11 +174,11 @@ def main(args):
         test_ds = DataSetMRIs(test_folder, transform=transform)
 
         train_dataloader = DataLoader(
-            train_ds, batch_size=batch_size, shuffle=False)
+            train_ds, batch_size=batch_size, shuffle=True)
         valid_dataloader = DataLoader(
-            valid_ds, batch_size=batch_size, shuffle=False)
+            valid_ds, batch_size=batch_size, shuffle=True)
         test_dataloader = DataLoader(
-            test_ds, batch_size=batch_size, shuffle=False)
+            test_ds, batch_size=batch_size, shuffle=True)
 
         loss_fun = nn.MSELoss()
         # loss_fun = nn.L1Loss()
@@ -187,7 +188,7 @@ def main(args):
             optimizer, max_lr=args.lr_max, steps_per_epoch=len(train_dataloader), epochs=num_epoch)
 
         print_configuration(loss_fun, scheduler, args.lr, args.lr_max,
-                            num_epoch, pacience, optimizer, batch_size)
+                            num_epoch, pacience, optimizer, batch_size, from_scratch=True)
 
         train_metrics, valid_metrics = train(model, train_dataloader,
                                              valid_dataloader, loss_fun,
