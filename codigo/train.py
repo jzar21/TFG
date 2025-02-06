@@ -11,7 +11,8 @@ from early_stopper import EarlyStopping
 
 
 def train_one_epoch(model, dataloader_train,
-                    optimizer, loss_function, scheduler, device, verbose_percentaje=0.3):
+                    optimizer, loss_function, scheduler, device,
+                    verbose_percentaje=0.3):
     model.train()
     percentage_info = int(verbose_percentaje * len(dataloader_train))
     avg_batch_loses = []
@@ -36,14 +37,18 @@ def train_one_epoch(model, dataloader_train,
 
 
 def evaluate_loader(model, dataloader, device):
-    model.eval()
+#    model.eval() # maybe a bug??
     metrics = {}
     predicted = []
     reals = []
     for im, label in dataloader:
         im, label = im.to(device), label.to(device)
-        predicted.extend(model(im).view(-1).detach().cpu().numpy().tolist())
-        reals.extend(label.cpu().numpy().tolist())
+        with torch.no_grad():
+            prediction = model(im).view(-1).detach().cpu().numpy().tolist()
+            real = label.cpu().numpy().tolist()
+
+        predicted.extend(prediction)
+        reals.extend(real)
 
     metrics['MSE'] = mean_squared_error(reals, predicted)
     metrics['MAE'] = mean_absolute_error(reals, predicted)
@@ -64,7 +69,8 @@ def train(model, train_loader, valid_loader, loss_function, optimizer, scheduler
         print(f"Epoch {epoch + 1}/{num_epochs}")
 
         avg_batch_loses = train_one_epoch(model, train_loader, optimizer,
-                                          loss_function, scheduler, device, verbose_percentaje=verbose_percent)
+                                          loss_function, scheduler, device,
+                                          verbose_percentaje=verbose_percent)
 
         train_evaluation = evaluate_loader(model, train_loader, device)
         valid_evaluation = evaluate_loader(model, valid_loader, device)
