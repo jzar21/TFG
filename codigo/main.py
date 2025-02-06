@@ -51,8 +51,11 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=0.001,
                         help='Learning rate')
 
-    parser.add_argument('--lr_max', type=float, default=0.1,
+    parser.add_argument('--lr_max', type=float, default=0.01,
                         help='Max Learning rate')
+
+    parser.add_argument('--from_scratch', type=bool, default=False,
+                        help='Train from random paramerts')
 
     return parser.parse_args()
 
@@ -88,12 +91,11 @@ def load_pretrained_model(pretrain_path, device, from_scratch=True):
         return None
 
     model = ResNet3D_Regresion(model_depth).to(device)
-
+    print(f'Depth: {model_depth}')
     if not from_scratch:
         checkpoint = torch.load(pretrain_path)
         state_dict = checkpoint['state_dict']
-        state_dict = {k.replace('module.', 'model.')
-                                : v for k, v in state_dict.items()}
+        state_dict = {k.replace('module.', 'model.')                      : v for k, v in state_dict.items()}
         model.load_state_dict(state_dict, strict=False)
 
     print('-' * 50)
@@ -106,7 +108,7 @@ def load_pretrained_model(pretrain_path, device, from_scratch=True):
 
 
 def plot_predictions(model, dataloader, title, save_path, device):
-    # model.eval()
+    #    model.eval()
     predicted = []
     reals = []
     x = np.arange(7, 27)
@@ -151,10 +153,11 @@ def main(args):
     num_epoch = args.num_epochs
     pacience = args.pacience
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    torch.cuda.empty_cache()
 
     if args.train:
         model, model_depth = load_pretrained_model(
-            args.mn_model_path, device, from_scratch=True)
+            args.mn_model_path, device, from_scratch=args.from_scratch)
 
         model.to(device)
 
@@ -183,12 +186,15 @@ def main(args):
         loss_fun = nn.MSELoss()
         # loss_fun = nn.L1Loss()
         # loss_fun = nn.HuberLoss()
-        optimizer = optim.AdamW(model.parameters(), lr=args.lr)
+        # loss_fun = nn.SmoothL1Loss()
+
+        # optimizer = optim.AdamW(model.parameters(), lr=args.lr)
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer, max_lr=args.lr_max, steps_per_epoch=len(train_dataloader), epochs=num_epoch)
 
         print_configuration(loss_fun, scheduler, args.lr, args.lr_max,
-                            num_epoch, pacience, optimizer, batch_size, from_scratch=True)
+                            num_epoch, pacience, optimizer, batch_size, from_scratch=args.from_scratch)
 
         train_metrics, valid_metrics = train(model, train_dataloader,
                                              valid_dataloader, loss_fun,
