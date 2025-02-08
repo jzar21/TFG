@@ -6,10 +6,11 @@ import torchio as tio
 import pydicom
 import numpy as np
 import os
+import SimpleITK as sitk
 
 
 class DataSetMRIs(Dataset):
-    def __init__(self, mri_dir, transform=None):
+    def __init__(self, mri_dir, transform=None, num_central_images=10):
         """
         Args:
             mri_dit (str): Path to the directory with the MRIs.
@@ -17,6 +18,7 @@ class DataSetMRIs(Dataset):
         """
 
         self.transform = transform
+        self.num_central_images = num_central_images
 
         self.mris_paths = []
 
@@ -37,32 +39,61 @@ class DataSetMRIs(Dataset):
 
             Returns a 3D volume and the age asociated with it.
         """
-        mri_path = self.mris_paths[idx]
 
-        full_mri_img = []
-        mri_order = []
-        age = -1
-        for dicom in os.listdir(mri_path):
-            dicom_path = os.path.join(mri_path, dicom)
-            dcm = pydicom.dcmread(dicom_path)
-            full_mri_img.append(np.array(dcm.pixel_array))
-            age = dcm.PatientAge
-            mri_order.append(dcm.InstanceNumber)
-
-        index = np.argsort(mri_order)
-        full_mri_img = [full_mri_img[i] for i in index]
-
-        tensor_mri = np.stack(full_mri_img)
-        tensor_mri = np.expand_dims(tensor_mri, axis=0)
+        tensor, dicom_img = self.get_image_tensor(idx)
+        age = self.get_age(dicom_img)
+        tensor = self.get_k_central_images(tensor, self.num_central_images)
 
         if self.transform != None:
-            tensor_mri = self.transform(tensor_mri)
+            tensor = self.transform(tensor)
 
-        tensor_mri = torch.tensor(tensor_mri, dtype=torch.float32)
+        return tensor.unsqueeze(0), age
 
+    def get_image_tensor(self, idx):
+        mri_path = self.mris_paths[idx]
+
+        reader = sitk.ImageSeriesReader()
+        dicom_names = reader.GetGDCMSeriesFileNames(mri_path)
+        reader.SetFileNames(dicom_names)
+        image = reader.Execute()
+        image_array = sitk.GetArrayFromImage(image)
+
+        tensor = torch.tensor(image_array, dtype=torch.float32)
+        return tensor, dicom_names
+
+    def get_age(self, dicom_imgs):
+        reader = sitk.ImageFileReader()
+        reader.SetFileName(dicom_imgs[0])
+        reader.LoadPrivateTagsOn()
+        reader.ReadImageInformation()
+
+        k = '0010|1010'
+        age = reader.GetMetaData(k)
         age = float(''.join(filter(str.isdigit, age)))  # 019Y for example
+        return age
 
-        return tensor_mri, torch.tensor(age)
+    def get_k_central_images(self, tensor, num_central_images):
+        num_slices = tensor.shape[0]
+        if num_slices <= num_central_images:
+            padding = num_central_images - num_slices
+
+            padding_left = padding // 2
+            padding_right = padding - padding_left
+
+            tensor = torch.cat([
+                torch.zeros(padding_left, *tensor.shape[1:]),
+                tensor,
+                torch.zeros(padding_right, *tensor.shape[1:])
+            ])
+            return tensor
+
+        center = num_slices // 2
+        k = num_central_images
+        start = center - k // 2
+        end = center + k // 2 + 1
+        tensor = tensor[start:end, :, :]
+
+        return tensor
 
 
 def __test():

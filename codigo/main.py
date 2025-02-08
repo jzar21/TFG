@@ -57,6 +57,9 @@ def parse_args():
     parser.add_argument('--from_scratch', type=bool, default=False,
                         help='Train from random paramerts')
 
+    parser.add_argument('--num_slices', type=int, default=17,
+                        help='Num of slices of the mri to train')
+
     return parser.parse_args()
 
 
@@ -95,7 +98,7 @@ def load_pretrained_model(pretrain_path, device, from_scratch=True):
     if not from_scratch:
         checkpoint = torch.load(pretrain_path)
         state_dict = checkpoint['state_dict']
-        state_dict = {k.replace('module.', 'model.')                      : v for k, v in state_dict.items()}
+        state_dict = {k.replace('module.', 'model.'): v for k, v in state_dict.items()}
         model.load_state_dict(state_dict, strict=False)
 
     print('-' * 50)
@@ -161,20 +164,16 @@ def main(args):
 
         model.to(device)
 
-        print('Pesos capa 0')
-        print(model.model.conv1.weight)
-        print('*' * 70)
-
-        transform = tio.Compose([
-            tio.Resample((1.0, 1.0, 1.0)),
-            tio.CropOrPad((20, 400, 400)),
-            tio.transforms.ZNormalization(),
-            # tio.transforms.RescaleIntensity(out_min_max=(0, 1))
+        transform = torchvision.transforms.Compose([
+            torchvision.transforms.Resize((400, 400)),
         ])
 
-        train_ds = DataSetMRIs(train_folder, transform=transform)
-        valid_ds = DataSetMRIs(valid_folder, transform=transform)
-        test_ds = DataSetMRIs(test_folder, transform=transform)
+        train_ds = DataSetMRIs(
+            train_folder, transform=transform, num_central_images=args.num_slices)
+        valid_ds = DataSetMRIs(
+            valid_folder, transform=transform, num_central_images=args.num_slices)
+        test_ds = DataSetMRIs(test_folder, transform=transform,
+                              num_central_images=args.num_slices)
 
         train_dataloader = DataLoader(
             train_ds, batch_size=batch_size, shuffle=True)
@@ -188,8 +187,8 @@ def main(args):
         # loss_fun = nn.HuberLoss()
         # loss_fun = nn.SmoothL1Loss()
 
-        # optimizer = optim.AdamW(model.parameters(), lr=args.lr)
-        optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
+        optimizer = optim.AdamW(model.parameters(), lr=args.lr)
+        # optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer, max_lr=args.lr_max, steps_per_epoch=len(train_dataloader), epochs=num_epoch)
 
