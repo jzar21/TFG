@@ -12,7 +12,7 @@ from early_stopper import EarlyStopping
 
 def train_one_epoch(model, dataloader_train,
                     optimizer, loss_function, scheduler, device,
-                    verbose_percentaje=0.3):
+                    verbose_percentaje=0.3, classification=False):
     model.train()
     percentage_info = int(verbose_percentaje * len(dataloader_train))
     avg_batch_loses = []
@@ -21,7 +21,11 @@ def train_one_epoch(model, dataloader_train,
         im, label = im.to(device), label.to(device)
 
         optimizer.zero_grad()
-        outputs = model(im).view(-1)  # (batch_size, 1) a (batch_size)
+        if classification:
+            outputs = model(im)
+        else:
+            outputs = model(im).view(-1)  # (batch_size, 1) a (batch_size)
+
         loss = loss_function(outputs, label)
         loss.backward()
         optimizer.step()
@@ -36,8 +40,8 @@ def train_one_epoch(model, dataloader_train,
     return np.array(avg_batch_loses)
 
 
-def evaluate_loader(model, dataloader, device):
-#    model.eval() # maybe a bug??
+def evaluate_loader(model, dataloader, device, classification=False, min_age=14):
+    # model.eval() # maybe a bug??
     metrics = {}
     predicted = []
     reals = []
@@ -46,6 +50,12 @@ def evaluate_loader(model, dataloader, device):
         with torch.no_grad():
             prediction = model(im).view(-1).detach().cpu().numpy().tolist()
             real = label.cpu().numpy().tolist()
+
+        if classification:
+            prediction = np.argmax(prediction, axis=1) + min_age
+            real = np.argmax(real, axis=1) + min_age
+            prediction = prediction.tolist()
+            real = real.tolist()
 
         predicted.extend(prediction)
         reals.extend(real)
