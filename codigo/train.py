@@ -48,7 +48,10 @@ def evaluate_loader(model, dataloader, device, classification=False, min_age=14)
     for im, label in dataloader:
         im, label = im.to(device), label.to(device)
         with torch.no_grad():
-            prediction = model(im).view(-1).detach().cpu().numpy().tolist()
+            if classification:
+                prediction = model(im).detach().cpu().numpy().tolist()
+            else:
+                prediction = model(im).view(-1).detach().cpu().numpy().tolist()
             real = label.cpu().numpy().tolist()
 
         if classification:
@@ -68,7 +71,7 @@ def evaluate_loader(model, dataloader, device, classification=False, min_age=14)
 
 
 def train(model, train_loader, valid_loader, loss_function, optimizer, scheduler, device,
-          num_epochs=25, patience=5, verbose_percent=0.3):
+          num_epochs=25, patience=5, verbose_percent=0.3, classification=False):
 
     train_metrics = {'MSE': [], 'MAE': [], 'R2': []}
     valid_metrics = {'MSE': [], 'MAE': [], 'R2': []}
@@ -80,10 +83,12 @@ def train(model, train_loader, valid_loader, loss_function, optimizer, scheduler
 
         avg_batch_loses = train_one_epoch(model, train_loader, optimizer,
                                           loss_function, scheduler, device,
-                                          verbose_percentaje=verbose_percent)
+                                          verbose_percentaje=verbose_percent, classification=classification)
 
-        train_evaluation = evaluate_loader(model, train_loader, device)
-        valid_evaluation = evaluate_loader(model, valid_loader, device)
+        train_evaluation = evaluate_loader(
+            model, train_loader, device, classification=classification)
+        valid_evaluation = evaluate_loader(
+            model, valid_loader, device, classification=classification)
 
         for item, values in train_evaluation.items():
             print(f'Train {item}: {values}')

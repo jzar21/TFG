@@ -105,8 +105,7 @@ def load_pretrained_model(pretrain_path, device, from_scratch=True, classificati
     if not from_scratch:
         checkpoint = torch.load(pretrain_path)
         state_dict = checkpoint['state_dict']
-        state_dict = {k.replace('module.', 'model.')
-                                : v for k, v in state_dict.items()}
+        state_dict = {k.replace('module.', 'model.')                      : v for k, v in state_dict.items()}
         model.load_state_dict(state_dict, strict=False)
 
     print('-' * 50)
@@ -118,7 +117,7 @@ def load_pretrained_model(pretrain_path, device, from_scratch=True, classificati
     return model, model_depth
 
 
-def plot_predictions(model, dataloader, title, save_path, device):
+def plot_predictions(model, dataloader, title, save_path, device, classification=False, min_age=14):
     # model.eval()
     predicted = []
     reals = []
@@ -127,9 +126,20 @@ def plot_predictions(model, dataloader, title, save_path, device):
         im, label = im.to(device), label.to(device)
 
         with torch.no_grad():
-            predicted.extend(
-                model(im).view(-1).detach().cpu().numpy().tolist())
-            reals.extend(label.cpu().numpy().tolist())
+            if classification:
+                prediction = model(im).detach().cpu().numpy().tolist()
+            else:
+                prediction = model(im).view(-1).detach().cpu().numpy().tolist()
+            real = label.cpu().numpy().tolist()
+
+        if classification:
+            prediction = np.argmax(prediction, axis=1) + min_age
+            real = np.argmax(real, axis=1) + min_age
+            prediction = prediction.tolist()
+            real = real.tolist()
+
+        predicted.extend(prediction)
+        reals.extend(real)
 
     plt.scatter(predicted, reals, s=8)
     plt.plot(x, x, color='red', label='Prediccion perfecta', ls='--')
@@ -207,7 +217,7 @@ def main(args):
         train_metrics, valid_metrics = train(model, train_dataloader,
                                              valid_dataloader, loss_fun,
                                              optimizer, scheduler, device, num_epochs=num_epoch,
-                                             patience=pacience)
+                                             patience=pacience, classification=args.clasification)
 
         time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         torch.save(
@@ -216,13 +226,13 @@ def main(args):
         make_plots(train_metrics, valid_metrics, time)
 
         plot_predictions(model, train_dataloader, 'Predicciones en Entrenamiento',
-                         f'./graficas/pred_train_{time}.png', device)
+                         f'./graficas/pred_train_{time}.png', device, classification=args.clasification)
 
         plot_predictions(model, valid_dataloader, 'Predicciones en Validacion',
-                         f'./graficas/pred_valid_{time}.png', device)
+                         f'./graficas/pred_valid_{time}.png', device, classification=args.clasification)
 
         plot_predictions(model, test_dataloader, 'Predicciones en Test',
-                         f'./graficas/pred_test_{time}.png', device)
+                         f'./graficas/pred_test_{time}.png', device, classification=args.clasification)
 
         print('Finished!!')
 
