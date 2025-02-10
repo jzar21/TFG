@@ -96,19 +96,16 @@ class DataSetMRIs(Dataset):
         return tensor
 
 
-def __test():
-    data_folder = '../../datos/'
+class DataSetMRIsClassification(DataSetMRIs):
+    def __init__(self, mri_dir, transform=None, num_central_images=10, min_age=14, max_age=25):
+        super().__init__(mri_dir, transform, num_central_images)
+        self.num_clases = max_age - min_age + 1
+        self.min_age = min_age
+        self.max_age = max_age
 
-    transform = transforms.Compose([
-        tio.Resize((20, 350, 350)),
-    ])
+    def __getitem__(self, idx):
+        img, label = super().__getitem__(idx)
+        one_hot = torch.zeros(self.num_clases)
+        one_hot[label.to(torch.int) - self.min_age] = 1
 
-    data_set = DataSetMRIs(data_folder, transform=transform)
-    data_loader = DataLoader(data_set, batch_size=2)
-
-    for im, label in data_loader:
-        print(im.shape, label)
-
-
-if __name__ == '__main__':
-    __test()
+        return img, one_hot
