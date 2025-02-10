@@ -3,14 +3,14 @@ from train import train, evaluate_loader
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from data_loaders import DataSetMRIs
+from data_loaders import DataSetMRIs, DataSetMRIsClassification
 from torch.utils.data import DataLoader
 from datetime import datetime
 import torchvision
 import torchio as tio
 import seaborn as sns
 import matplotlib.pyplot as plt
-from create_model import ResNet3D_Regresion
+from create_model import ResNet3D_Regresion, ResNet3D_Clasificacion
 from torchsummary import summary
 import re
 import sys
@@ -60,6 +60,9 @@ def parse_args():
     parser.add_argument('--num_slices', type=int, default=17,
                         help='Num of slices of the mri to train')
 
+    parser.add_argument('--clasification', type=bool, default=True,
+                        help='If is treated as a regresion or clasification problem')
+
     return parser.parse_args()
 
 
@@ -82,7 +85,7 @@ def make_plots(data_train, data_val, time):
         plt.close()
 
 
-def load_pretrained_model(pretrain_path, device, from_scratch=True):
+def load_pretrained_model(pretrain_path, device, from_scratch=True, classification=False):
     match = re.search(r"resnet_(\d+)", pretrain_path)
 
     if match:
@@ -93,12 +96,17 @@ def load_pretrained_model(pretrain_path, device, from_scratch=True):
 
         return None
 
-    model = ResNet3D_Regresion(model_depth).to(device)
+    if classification:
+        model = ResNet3D_Clasificacion(model_depth).to(device)
+    else:
+        model = ResNet3D_Regresion(model_depth).to(device)
+
     print(f'Depth: {model_depth}')
     if not from_scratch:
         checkpoint = torch.load(pretrain_path)
         state_dict = checkpoint['state_dict']
-        state_dict = {k.replace('module.', 'model.'): v for k, v in state_dict.items()}
+        state_dict = {k.replace('module.', 'model.')
+                                : v for k, v in state_dict.items()}
         model.load_state_dict(state_dict, strict=False)
 
     print('-' * 50)
@@ -111,7 +119,7 @@ def load_pretrained_model(pretrain_path, device, from_scratch=True):
 
 
 def plot_predictions(model, dataloader, title, save_path, device):
-    #    model.eval()
+    # model.eval()
     predicted = []
     reals = []
     x = np.arange(7, 27)
@@ -160,7 +168,7 @@ def main(args):
 
     if args.train:
         model, model_depth = load_pretrained_model(
-            args.mn_model_path, device, from_scratch=args.from_scratch)
+            args.mn_model_path, device, from_scratch=args.from_scratch, classification=args.clasification)
 
         model.to(device)
 
@@ -168,12 +176,12 @@ def main(args):
             torchvision.transforms.Resize((400, 400)),
         ])
 
-        train_ds = DataSetMRIs(
+        train_ds = DataSetMRIsClassification(
             train_folder, transform=transform, num_central_images=args.num_slices)
-        valid_ds = DataSetMRIs(
+        valid_ds = DataSetMRIsClassification(
             valid_folder, transform=transform, num_central_images=args.num_slices)
-        test_ds = DataSetMRIs(test_folder, transform=transform,
-                              num_central_images=args.num_slices)
+        test_ds = DataSetMRIsClassification(test_folder, transform=transform,
+                                            num_central_images=args.num_slices)
 
         train_dataloader = DataLoader(
             train_ds, batch_size=batch_size, shuffle=True)
@@ -182,10 +190,11 @@ def main(args):
         test_dataloader = DataLoader(
             test_ds, batch_size=batch_size, shuffle=True)
 
-        loss_fun = nn.MSELoss()
+        # loss_fun = nn.MSELoss()
         # loss_fun = nn.L1Loss()
         # loss_fun = nn.HuberLoss()
         # loss_fun = nn.SmoothL1Loss()
+        loss_fun = nn.CrossEntropyLoss()
 
         optimizer = optim.AdamW(model.parameters(), lr=args.lr)
         # optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
