@@ -47,7 +47,7 @@ class DataSetMRIs(Dataset):
         if self.transform != None:
             tensor = self.transform(tensor)
 
-        return tensor.unsqueeze(0), age
+        return tensor.unsqueeze(0), torch.tensor(age)
 
     def get_image_tensor(self, idx):
         mri_path = self.mris_paths[idx]
