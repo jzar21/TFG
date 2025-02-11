@@ -200,11 +200,13 @@ def main(args):
         test_dataloader = DataLoader(
             test_ds, batch_size=batch_size, shuffle=True)
 
-        # loss_fun = nn.MSELoss()
-        # loss_fun = nn.L1Loss()
-        # loss_fun = nn.HuberLoss()
-        # loss_fun = nn.SmoothL1Loss()
-        loss_fun = nn.CrossEntropyLoss()
+        if not args.clasification:
+            loss_fun = nn.MSELoss()
+            # loss_fun = nn.L1Loss()
+            # loss_fun = nn.HuberLoss()
+            # loss_fun = nn.SmoothL1Loss()
+        else:
+            loss_fun = nn.CrossEntropyLoss()
 
         optimizer = optim.AdamW(model.parameters(), lr=args.lr)
         # optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
