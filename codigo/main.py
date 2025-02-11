@@ -105,7 +105,7 @@ def load_pretrained_model(pretrain_path, device, from_scratch=True, classificati
     if not from_scratch:
         checkpoint = torch.load(pretrain_path)
         state_dict = checkpoint['state_dict']
-        state_dict = {k.replace('module.', 'model.')                      : v for k, v in state_dict.items()}
+        state_dict = {k.replace('module.', 'model.'): v for k, v in state_dict.items()}
         model.load_state_dict(state_dict, strict=False)
 
     print('-' * 50)
@@ -152,7 +152,7 @@ def plot_predictions(model, dataloader, title, save_path, device, classification
     plt.close()
 
 
-def print_configuration(loss, scheduler, lr, lr_max, num_epochs, patience, optimizer, bs, from_scratch):
+def print_configuration(loss, scheduler, lr, lr_max, num_epochs, patience, optimizer, bs, from_scratch, clasification):
     print('Configuration:')
     print(f'loss {loss}')
     print(f'scheduler {scheduler}')
@@ -163,6 +163,7 @@ def print_configuration(loss, scheduler, lr, lr_max, num_epochs, patience, optim
     print(f'optimizer {optimizer}')
     print(f'batch size: {bs}')
     print(f'from scratch: {from_scratch}')
+    print(f'Clasification: {clasification}')
     print('-' * 50)
 
 
@@ -184,14 +185,23 @@ def main(args):
 
         transform = torchvision.transforms.Compose([
             torchvision.transforms.Resize((400, 400)),
+            tio.transforms.ZNormalization(),
         ])
 
-        train_ds = DataSetMRIsClassification(
-            train_folder, transform=transform, num_central_images=args.num_slices)
-        valid_ds = DataSetMRIsClassification(
-            valid_folder, transform=transform, num_central_images=args.num_slices)
-        test_ds = DataSetMRIsClassification(test_folder, transform=transform,
-                                            num_central_images=args.num_slices)
+        if not args.clasification:
+            train_ds = DataSetMRIs(
+                train_folder, transform=transform, num_central_images=args.num_slices)
+            valid_ds = DataSetMRIs(
+                valid_folder, transform=transform, num_central_images=args.num_slices)
+            test_ds = DataSetMRIs(test_folder, transform=transform,
+                                  num_central_images=args.num_slices)
+        else:
+            train_ds = DataSetMRIsClassification(
+                train_folder, transform=transform, num_central_images=args.num_slices)
+            valid_ds = DataSetMRIsClassification(
+                valid_folder, transform=transform, num_central_images=args.num_slices)
+            test_ds = DataSetMRIsClassification(test_folder, transform=transform,
+                                                num_central_images=args.num_slices)
 
         train_dataloader = DataLoader(
             train_ds, batch_size=batch_size, shuffle=True)
@@ -214,7 +224,8 @@ def main(args):
             optimizer, max_lr=args.lr_max, steps_per_epoch=len(train_dataloader), epochs=num_epoch)
 
         print_configuration(loss_fun, scheduler, args.lr, args.lr_max,
-                            num_epoch, pacience, optimizer, batch_size, from_scratch=args.from_scratch)
+                            num_epoch, pacience, optimizer, batch_size,
+                            from_scratch=args.from_scratch, clasification=args.clasification)
 
         train_metrics, valid_metrics = train(model, train_dataloader,
                                              valid_dataloader, loss_fun,

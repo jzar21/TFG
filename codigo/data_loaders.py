@@ -43,11 +43,12 @@ class DataSetMRIs(Dataset):
         tensor, dicom_img = self.get_image_tensor(idx)
         age = self.get_age(dicom_img)
         tensor = self.get_k_central_images(tensor, self.num_central_images)
+        tensor = tensor.unsqueeze(0)
 
         if self.transform != None:
             tensor = self.transform(tensor)
 
-        return tensor.unsqueeze(0), torch.tensor(age)
+        return tensor, torch.tensor(age)
 
     def get_image_tensor(self, idx):
         mri_path = self.mris_paths[idx]
