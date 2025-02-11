@@ -31,7 +31,7 @@ class ResNet3D_Regresion(nn.Module):
 class ResNet3D_Clasificacion(nn.Module):
     def __init__(self, model_depth: int = 18, n_input_channels: int = 1, min_age=14,
                  max_age=25, fc_layers: list = [1024, 512, 256, 1]):
-        super(ResNet3D_Regresion, self).__init__()
+        super(ResNet3D_Clasificacion, self).__init__()
         self.model = generate_model(
             model_depth, n_input_channels=n_input_channels, n_classes=fc_layers[0])
 
