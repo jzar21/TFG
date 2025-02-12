@@ -1,5 +1,8 @@
+import monai.networks
+import monai.networks.nets
 from resnets_3d.models.resnet import generate_model
 import torch.nn as nn
+import monai
 
 
 class ResNet3D_Regresion(nn.Module):
@@ -26,3 +29,15 @@ class ResNet3D_Regresion(nn.Module):
         x = self.model(x)
         x = self.fc(x)
         return x
+
+
+class ResNet3D101_MONAI(nn.Module):
+    def __init__(self, num_classes=1):
+        super(ResNet3D101_MONAI, self).__init__()
+
+        self.model = monai.networks.nets.resnet101(
+            spatial_dims=3, n_input_channels=1,
+            num_classes=num_classes)
+
+    def forward(self, x):
+        return self.model(x)
