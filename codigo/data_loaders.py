@@ -7,6 +7,7 @@ import pydicom
 import numpy as np
 import os
 import SimpleITK as sitk
+import cv2
 
 
 class DataSetMRIs(Dataset):
@@ -43,11 +44,34 @@ class DataSetMRIs(Dataset):
         tensor, dicom_img = self.get_image_tensor(idx)
         age = self.get_age(dicom_img)
         tensor = self.get_k_central_images(tensor, self.num_central_images)
+        tensor = self.apply_otsu_thresholding(tensor)
+        tensor = tensor.unsqueeze(0)
 
         if self.transform != None:
             tensor = self.transform(tensor)
 
-        return tensor.unsqueeze(0), torch.tensor(age)
+        return tensor, torch.tensor(age)
+
+    def apply_otsu_thresholding(self, tensor):
+        """
+        Apply Otsu's thresholding to each 2D slice of the 3D tensor.
+        """
+        for i in range(tensor.shape[0]):
+            slice_2d = tensor[i, :, :].numpy()
+
+            min_val = slice_2d.min()
+            max_val = slice_2d.max()
+
+            rescaled = 255 * (slice_2d - min_val) / (max_val - min_val)
+            rescaled = np.uint8(rescaled)
+
+            ret, otsu_thresholded = cv2.threshold(
+                rescaled, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+            tensor[i, :, :] = torch.tensor(
+                otsu_thresholded, dtype=torch.float32)
+
+        return tensor
 
     def get_image_tensor(self, idx):
         mri_path = self.mris_paths[idx]
