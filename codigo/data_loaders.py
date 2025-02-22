@@ -44,11 +44,12 @@ class DataSetMRIs(Dataset):
         tensor, dicom_img = self.get_image_tensor(idx)
         age = self.get_age(dicom_img)
         tensor = self.get_k_central_images(tensor, self.num_central_images)
-        tensor = self.apply_otsu_thresholding(tensor)
-        tensor = tensor.unsqueeze(0)
 
         if self.transform != None:
             tensor = self.transform(tensor)
+
+        tensor = self.apply_otsu_thresholding(tensor)
+        tensor = tensor.unsqueeze(0)
 
         return tensor, torch.tensor(age)
 
