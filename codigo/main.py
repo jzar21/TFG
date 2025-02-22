@@ -166,10 +166,10 @@ def main(args):
 
         model.to(device)
 
-        # transform = torchvision.transforms.Compose([
-        #     torchvision.transforms.Resize((400, 400)),
-        # ])
-        transform = monai.transforms.Compose([
+        transform = torchvision.transforms.Compose([
+            torchvision.transforms.Resize((400, 400)),
+        ])
+        transform_aug = monai.transforms.Compose([
             torchvision.transforms.Resize((400, 400)),
             monai.transforms.RandRotate(
                 range_x=(15 * np.pi) / 180, prob=0.1, padding_mode='zeros'),
@@ -178,7 +178,7 @@ def main(args):
         ])
 
         train_ds = DataSetMRIs(
-            train_folder, transform=transform, num_central_images=args.num_slices)
+            train_folder, transform=transform_aug, num_central_images=args.num_slices)
         valid_ds = DataSetMRIs(
             valid_folder, transform=transform, num_central_images=args.num_slices)
         test_ds = DataSetMRIs(test_folder, transform=transform,
