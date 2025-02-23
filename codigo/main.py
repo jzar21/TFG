@@ -87,9 +87,9 @@ def freeze_bn_layers(model):
     for module in model.modules():
         if isinstance(module, nn.BatchNorm3d):
             module.requires_grad_(False)
-            module.track_running_stats = False
-            module.running_mean = None
-            module.running_var = None
+            # module.track_running_stats = False
+            # module.running_mean = None
+            # module.running_var = None
 
     return model
 
