@@ -37,7 +37,7 @@ def train_one_epoch(model, dataloader_train,
 
 
 def evaluate_loader(model, dataloader, device):
-#    model.eval() # maybe a bug??
+    model.eval()
     metrics = {}
     predicted = []
     reals = []

@@ -83,6 +83,17 @@ def make_plots(data_train, data_val, time):
         plt.close()
 
 
+def freeze_bn_layers(model):
+    for module in model.modules():
+        if isinstance(module, nn.BatchNorm3d):
+            module.requires_grad_(False)
+            module.track_running_stats = False
+            module.running_mean = None
+            module.running_var = None
+
+    return model
+
+
 def load_pretrained_model(pretrain_path, device, from_scratch=True):
     match = re.search(r"resnet_(\d+)", pretrain_path)
 
@@ -99,8 +110,7 @@ def load_pretrained_model(pretrain_path, device, from_scratch=True):
     if not from_scratch:
         checkpoint = torch.load(pretrain_path)
         state_dict = checkpoint['state_dict']
-        state_dict = {k.replace('module.', 'model.')
-                                : v for k, v in state_dict.items()}
+        state_dict = {k.replace('module.', 'model.'): v for k, v in state_dict.items()}
         model.load_state_dict(state_dict, strict=False)
 
     print('-' * 50)
@@ -109,11 +119,13 @@ def load_pretrained_model(pretrain_path, device, from_scratch=True):
     print(summary(model, (1, 20, 100, 100)))
     print('-' * 50)
 
+    model = freeze_bn_layers(model)
+
     return model, model_depth
 
 
 def plot_predictions(model, dataloader, title, save_path, device):
-    # model.eval()
+    model.eval()
     predicted = []
     reals = []
     x = np.arange(7, 27)
@@ -166,15 +178,8 @@ def main(args):
 
         model.to(device)
 
-        # transform = torchvision.transforms.Compose([
-        #     torchvision.transforms.Resize((400, 400)),
-        # ])
-        transform = monai.transforms.Compose([
+        transform = torchvision.transforms.Compose([
             torchvision.transforms.Resize((400, 400)),
-            monai.transforms.RandRotate(
-                range_x=(15 * np.pi) / 180, prob=0.1, padding_mode='zeros'),
-            monai.transforms.RandAdjustContrast(gamma=(0.5, 1), prob=0.1),
-            monai.transforms.ToTensor()
         ])
 
         train_ds = DataSetMRIs(

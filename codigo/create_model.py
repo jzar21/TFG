@@ -19,7 +19,7 @@ class ResNet3D_Regresion(nn.Module):
                 nn.Linear(fc_layers[i - 1], fc_layers[i])
             )
             layers.append(nn.ReLU())
-            layers.append(nn.BatchNorm1d(fc_layers[i]))
+            # layers.append(nn.BatchNorm1d(fc_layers[i]))
 
         layers.append(nn.Linear(fc_layers[-2], fc_layers[-1]))
 
