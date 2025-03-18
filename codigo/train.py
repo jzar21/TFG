@@ -60,9 +60,9 @@ def evaluate_loader_classification(model, dataloader, device):
     metrics = {}
     loss_fn = torch.nn.BCELoss()
     predicted, reals = get_predictions(model, dataloader, device)
-    loss_value = loss_fn(torch.tensor(reals), torch.tensor(predicted))
+    loss_value = loss_fn(torch.tensor(predicted), torch.tensor(reals))
 
-    predicted = predicted > 0.5
+    predicted = (predicted > 0.5).astype(float)
     metrics['Precision'] = precision_score(reals, predicted)
     metrics['Recall'] = recall_score(reals, predicted)
     metrics['Accuracy'] = accuracy_score(reals, predicted)

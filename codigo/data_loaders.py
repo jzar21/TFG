@@ -145,7 +145,8 @@ class DataSetMRIClassification(DataSetMRIs):
 
     def __getitem__(self, idx):
         tensor, age = super().__getitem__(idx)
-        older_than_18 = age >= 18
+        older_than_18 = torch.tensor(
+            0, dtype=torch.float32) if age >= 18 else torch.tensor(1, dtype=torch.float32)
 
         return tensor, older_than_18
 

@@ -99,14 +99,22 @@ def main(args):
 
         make_plots(train_metrics, valid_metrics, time)
 
-        plot_predictions(model, train_dataloader, 'Predicciones en Entrenamiento',
-                         f'./graficas/pred_train_{time}.png', device)
+        if args.regresion:
+            plot_predictions(model, train_dataloader, 'Predicciones en Entrenamiento',
+                             f'./graficas/pred_train_{time}.png', device)
 
-        plot_predictions(model, valid_dataloader, 'Predicciones en Validacion',
-                         f'./graficas/pred_valid_{time}.png', device)
+            plot_predictions(model, valid_dataloader, 'Predicciones en Validacion',
+                             f'./graficas/pred_valid_{time}.png', device)
 
-        plot_predictions(model, test_dataloader, 'Predicciones en Test',
-                         f'./graficas/pred_test_{time}.png', device)
+            plot_predictions(model, test_dataloader, 'Predicciones en Test',
+                             f'./graficas/pred_test_{time}.png', device)
+        else:
+            plot_confusion(model, train_dataloader, 'Matriz de confusion en Entrenamiento',
+                           f'./graficas/confusion_train_{time}.png', device)
+            plot_confusion(model, valid_dataloader, 'Matriz de confusion en Entrenamiento',
+                           f'./graficas/confusion_valid_{time}.png', device)
+            plot_confusion(model, test_dataloader, 'Matriz de confusion en Entrenamiento',
+                           f'./graficas/confusion_test_{time}.png', device)
 
         print('Finished!!')
 
