@@ -12,7 +12,7 @@ class ResNet3D_Regresion(nn.Module):
         self.model = generate_model(
             model_depth, n_input_channels=n_input_channels, n_classes=fc_layers[0])
 
-        layers = [nn.ReLU(), nn.BatchNorm1d(fc_layers[0])]
+        layers = [nn.ReLU()]
 
         for i in range(1, len(fc_layers) - 1):
             layers.append(

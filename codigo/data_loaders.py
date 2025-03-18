@@ -11,7 +11,7 @@ import cv2
 
 
 class DataSetMRIs(Dataset):
-    def __init__(self, mri_dir, transform=None, num_central_images=10):
+    def __init__(self, mri_dir, transform=None, num_central_images=10, it=[5]*5):
         """
         Args:
             mri_dit (str): Path to the directory with the MRIs.
@@ -22,6 +22,7 @@ class DataSetMRIs(Dataset):
         self.num_central_images = num_central_images
 
         self.mris_paths = []
+        self.it = it
 
         for patient in os.listdir(mri_dir):
             patient_path = os.path.join(mri_dir, patient)
@@ -44,6 +45,7 @@ class DataSetMRIs(Dataset):
         tensor, dicom_img = self.get_image_tensor(idx)
         age = self.get_age(dicom_img)
         tensor = self.get_k_central_images(tensor, self.num_central_images)
+        # tensor = self.apply_bias_field_corrector(tensor)
 
         if self.transform != None:
             tensor = self.transform(tensor)
@@ -52,6 +54,22 @@ class DataSetMRIs(Dataset):
         tensor = tensor.unsqueeze(0)
 
         return tensor, torch.tensor(age)
+
+    def apply_bias_field_corrector(self, tensor):
+        corrector_bias = sitk.N4BiasFieldCorrectionImageFilter()
+        corrector_bias.SetMaximumNumberOfIterations(self.it)
+        corrector_bias.SetNumberOfThreads(30)
+
+        for i in range(tensor.shape[0]):
+            slice_2d = tensor[i, :, :].numpy()
+
+            img_sitk = sitk.GetImageFromArray(slice_2d)
+            img_bfc = corrector_bias.Execute(img_sitk)
+            img_bfc = sitk.GetArrayFromImage(img_bfc)
+
+            tensor[i, :, :] = torch.tensor(img_bfc, dtype=torch.float32)
+
+        return tensor
 
     def apply_otsu_thresholding(self, tensor):
         """
