@@ -43,7 +43,7 @@ def get_predictions(model, dataloader, device):
         predicted.extend(prediction)
         reals.extend(real)
 
-    return predicted, reals
+    return np.array(predicted), np.array(reals)
 
 
 def evaluate_loader_regresion(model, dataloader, device):
@@ -62,7 +62,7 @@ def evaluate_loader_classification(model, dataloader, device):
     predicted, reals = get_predictions(model, dataloader, device)
     loss_value = loss_fn(torch.tensor(reals), torch.tensor(predicted))
 
-    predicted = torch.argmax(predicted, dim=1)
+    predicted = predicted > 0.5
     metrics['Precision'] = precision_score(reals, predicted)
     metrics['Recall'] = recall_score(reals, predicted)
     metrics['Accuracy'] = accuracy_score(reals, predicted)

@@ -29,8 +29,8 @@ def replace_bn_with_instancenorm(model):
             replace_bn_with_instancenorm(child)
 
 
-def load_pretrained_model(pretrain_path, device, from_scratch=True):
-    match = re.search(r"resnet_(\d+)", pretrain_path)
+def load_pretrained_model(args, device):
+    match = re.search(r"resnet_(\d+)", args.model_path)
 
     if match:
         model_depth = int(match.group(1))
@@ -41,12 +41,16 @@ def load_pretrained_model(pretrain_path, device, from_scratch=True):
         return None
 
     model = ResNet3D(model_depth).to(device)
+    if args.classification:
+        model = ResNet3DBinaryClasificacion(model_depth).to(device)
+
     print(f'Depth: {model_depth}')
-    if not from_scratch:
-        # model = torch.load(pretrain_path)
-        checkpoint = torch.load(pretrain_path)
+    if not args.from_scratch:
+        # model = torch.load(args.model_path)
+        checkpoint = torch.load(args.model_path)
         state_dict = checkpoint['state_dict']
-        state_dict = {k.replace('module.', 'model.'): v for k, v in state_dict.items()}
+        state_dict = {k.replace('module.', 'model.')
+                                : v for k, v in state_dict.items()}
         model.load_state_dict(state_dict, strict=False)
 
     freeze_bn_layers(model)

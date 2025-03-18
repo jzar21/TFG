@@ -26,3 +26,15 @@ class ResNet3D(nn.Module):
         x = self.model(x)
         x = self.fc(x)
         return x
+
+
+class ResNet3DBinaryClasificacion(ResNet3D):
+    def __init__(self, model_depth=18, n_input_channels=1, fc_layers=[1024, 512, 256, 1]):
+        fc_layers[-1] = 1
+        super().__init__(model_depth, n_input_channels, fc_layers)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        x = super().forward(x)
+        x = self.sigmoid(x)
+        return x

@@ -52,8 +52,7 @@ def main(args):
     torch.cuda.empty_cache()
 
     if args.train:
-        model, model_depth = load_pretrained_model(
-            args.model_path, device, from_scratch=args.from_scratch)
+        model, model_depth = load_pretrained_model(args, device)
 
         model.to(device)
 
