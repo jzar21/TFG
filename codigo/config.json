@@ -1,0 +1,19 @@
+{
+    "train_folder": "./data",
+    "valid_folder": "./data",
+    "test_folder": "./data",
+    "batch_size": 16,
+    "num_epoch": 50,
+    "pacience": 15,
+    "model_path": "./model/resnet_101.pth",
+    "learning_rate": 0.001,
+    "learning_rate_max": 0.01,
+    "from_scratch": false,
+    "num_slices": 17,
+    "train": true,
+    "regresion": true,
+    "classification": false,
+    "loss": "MSE",
+    "optimizer": "adamw",
+    "out_name": "resnet"
+}

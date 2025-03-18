@@ -139,6 +139,17 @@ class DataSetMRIs(Dataset):
         return tensor
 
 
+class DataSetMRIClassification(DataSetMRIs):
+    def __init__(self, mri_dir, transform=None, num_central_images=10, it=[5] * 5):
+        super().__init__(mri_dir, transform, num_central_images, it)
+
+    def __getitem__(self, idx):
+        tensor, age = super().__getitem__(idx)
+        older_than_18 = age >= 18
+
+        return tensor, older_than_18
+
+
 def __test():
     data_folder = '../../datos/'
 

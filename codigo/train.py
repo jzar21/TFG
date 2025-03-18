@@ -6,14 +6,14 @@ from data_loaders import DataSetMRIs
 import sys
 import torchio as tio
 import numpy as np
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, \
+    f1_score, recall_score, precision_score, accuracy_score
 from early_stopper import EarlyStopping
 import gc
 
 
 def train_one_epoch(model, dataloader_train,
-                    optimizer, loss_function, scheduler, device,
-                    verbose_percentaje=0.3):
+                    optimizer, loss_function, scheduler, device):
     model.train()
 
     for i, (im, label) in enumerate(dataloader_train):
@@ -30,9 +30,8 @@ def train_one_epoch(model, dataloader_train,
             f'\033[32mBatch[{i}/{len(dataloader_train)}] loss: {loss.item():.4f}\033[0m')
 
 
-def evaluate_loader(model, dataloader, device):
+def get_predictions(model, dataloader, device):
     model.eval()
-    metrics = {}
     predicted = []
     reals = []
     for im, label in dataloader:
@@ -44,6 +43,12 @@ def evaluate_loader(model, dataloader, device):
         predicted.extend(prediction)
         reals.extend(real)
 
+    return predicted, reals
+
+
+def evaluate_loader_regresion(model, dataloader, device):
+    metrics = {}
+    predicted, reals = get_predictions(model, dataloader, device)
     metrics['MSE'] = mean_squared_error(reals, predicted)
     metrics['MAE'] = mean_absolute_error(reals, predicted)
     metrics['R2'] = r2_score(reals, predicted)
@@ -51,11 +56,55 @@ def evaluate_loader(model, dataloader, device):
     return metrics
 
 
-def train(model, train_loader, valid_loader, loss_function, optimizer, scheduler, device,
-          num_epochs=25, patience=5, verbose_percent=0.3):
+def evaluate_loader_classification(model, dataloader, device):
+    metrics = {}
+    loss_fn = torch.nn.BCELoss()
+    predicted, reals = get_predictions(model, dataloader, device)
+    loss_value = loss_fn(torch.tensor(reals), torch.tensor(predicted))
 
-    train_metrics = {'MSE': [], 'MAE': [], 'R2': []}
-    valid_metrics = {'MSE': [], 'MAE': [], 'R2': []}
+    predicted = torch.argmax(predicted, dim=1)
+    metrics['Precision'] = precision_score(reals, predicted)
+    metrics['Recall'] = recall_score(reals, predicted)
+    metrics['Accuracy'] = accuracy_score(reals, predicted)
+    metrics['F1'] = f1_score(reals, predicted)
+    metrics['BCE'] = loss_value.item()
+
+    return metrics
+
+
+def evaluate_loader(model, data_loader, device, regresion):
+    if regresion:
+        return evaluate_loader_regresion(model, data_loader, device)
+
+    return evaluate_loader_classification(model, data_loader, device)
+
+
+def create_dicts(regresion):
+    train_metrics = None
+    valid_metrics = None
+    if regresion:
+        train_metrics = {'MSE': [], 'MAE': [], 'R2': []}
+        valid_metrics = {'MSE': [], 'MAE': [], 'R2': []}
+    else:
+        train_metrics = {'Precision': [],
+                         'Recall': [], 'Accuracy': [], 'BCE': [], 'F1': []}
+        valid_metrics = {'Precision': [],
+                         'Recall': [], 'Accuracy': [], 'BCE': [], 'F1': []}
+
+    return train_metrics, valid_metrics
+
+
+def get_last_loss(dict, regresion):
+    if regresion:
+        return dict['MSE'][-1]
+
+    return dict['BCE'][-1]
+
+
+def train(model, train_loader, valid_loader, loss_function, optimizer, scheduler, device,
+          num_epochs=25, patience=5, regresion=True):
+
+    train_metrics, valid_metrics = create_dicts(regresion)
     early_stoper = EarlyStopping(patience=patience)
 
     for epoch in range(num_epochs):
@@ -63,11 +112,12 @@ def train(model, train_loader, valid_loader, loss_function, optimizer, scheduler
         print(f"Epoch {epoch + 1}/{num_epochs}")
 
         train_one_epoch(model, train_loader, optimizer,
-                        loss_function, scheduler, device,
-                        verbose_percentaje=verbose_percent)
+                        loss_function, scheduler, device)
 
-        train_evaluation = evaluate_loader(model, train_loader, device)
-        valid_evaluation = evaluate_loader(model, valid_loader, device)
+        train_evaluation = evaluate_loader(
+            model, train_loader, device, regresion)
+        valid_evaluation = evaluate_loader(
+            model, valid_loader, device, regresion)
 
         for item, values in train_evaluation.items():
             print(f'Train {item}: {values}')
@@ -77,10 +127,13 @@ def train(model, train_loader, valid_loader, loss_function, optimizer, scheduler
             print(f'Valid {item}: {values}')
             valid_metrics[item].append(values)
 
-        if early_stoper(valid_metrics['MSE'][-1], model):
+        last_valid_loss = get_last_loss(valid_metrics, regresion)
+
+        if early_stoper(last_valid_loss, model):
             print('Early stopping!!')
             early_stoper.load_best_model(model)
             break
+
         gc.collect()
 
     print(f"Train completed")
