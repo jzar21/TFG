@@ -63,11 +63,12 @@ def plot_confusion(model, dataloader, title, save_path, device):
                 model(im).view(-1).detach().cpu().numpy().tolist())
             reals.extend(label.cpu().numpy().tolist())
 
+    predicted = np.array(predicted)
     predicted = (predicted > 0.5).astype(float)
     cm = confusion_matrix(reals, predicted)
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                 xticklabels=['Menor edad', 'Mayor edad'], yticklabels=['Menor edad', 'Mayor edad'])
-    plt.xlabel('Predicción')
+    plt.xlabel('Prediccion')
     plt.ylabel('Etiqueta Real')
     plt.title(title)
     plt.tight_layout()
