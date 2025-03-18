@@ -16,6 +16,7 @@ import re
 import sys
 import scienceplots
 import numpy as np
+import monai
 
 plt.style.use(['science', 'ieee', 'grid', 'no-latex'])
 
@@ -82,6 +83,29 @@ def make_plots(data_train, data_val, time):
         plt.close()
 
 
+def freeze_bn_layers(model):
+    for name, child in model.named_children():
+        if isinstance(child, nn.BatchNorm3d) or isinstance(child, nn.BatchNorm1d):
+            # child.requires_grad_(False)
+            # child.track_running_stats = False
+            child.running_mean = None
+            child.running_var = None
+        else:
+            freeze_bn_layers(child)
+
+
+def replace_bn_with_instancenorm(model):
+    for name, child in model.named_children():
+        if isinstance(child, nn.BatchNorm3d):
+            new_layer = nn.InstanceNorm3d(child.num_features)
+            setattr(model, name, new_layer)
+        elif isinstance(child, nn.BatchNorm1d):
+            new_layer = nn.InstanceNorm1d(child.num_features)
+            setattr(model, name, new_layer)
+        else:
+            replace_bn_with_instancenorm(child)
+
+
 def load_pretrained_model(pretrain_path, device, from_scratch=True):
     match = re.search(r"resnet_(\d+)", pretrain_path)
 
@@ -96,10 +120,16 @@ def load_pretrained_model(pretrain_path, device, from_scratch=True):
     model = ResNet3D_Regresion(model_depth).to(device)
     print(f'Depth: {model_depth}')
     if not from_scratch:
+        # model = torch.load(pretrain_path)
         checkpoint = torch.load(pretrain_path)
         state_dict = checkpoint['state_dict']
-        state_dict = {k.replace('module.', 'model.'): v for k, v in state_dict.items()}
+        state_dict = {k.replace('module.', 'model.')
+                                : v for k, v in state_dict.items()}
         model.load_state_dict(state_dict, strict=False)
+
+    freeze_bn_layers(model)
+    # replace_bn_with_instancenorm(model)
+    model = model.to(device)
 
     print('-' * 50)
     print(
@@ -111,7 +141,7 @@ def load_pretrained_model(pretrain_path, device, from_scratch=True):
 
 
 def plot_predictions(model, dataloader, title, save_path, device):
-    #    model.eval()
+    model.eval()
     predicted = []
     reals = []
     x = np.arange(7, 27)
@@ -123,10 +153,10 @@ def plot_predictions(model, dataloader, title, save_path, device):
                 model(im).view(-1).detach().cpu().numpy().tolist())
             reals.extend(label.cpu().numpy().tolist())
 
-    plt.scatter(predicted, reals, s=8)
+    plt.scatter(reals, predicted, s=8)
     plt.plot(x, x, color='red', label='Prediccion perfecta', ls='--')
-    plt.xlabel('Prediciones')
-    plt.ylabel('Reales')
+    plt.ylabel('Prediciones')
+    plt.xlabel('Reales')
     plt.title(title)
     plt.tight_layout()
     plt.legend(loc='best')
@@ -164,12 +194,23 @@ def main(args):
 
         model.to(device)
 
+        transform_aug = monai.transforms.Compose([
+            torchvision.transforms.Resize((400, 400)),
+            torchvision.transforms.RandomHorizontalFlip(p=0.25),
+            torchvision.transforms.RandomCrop((400, 400)),
+            torchvision.transforms.RandomPerspective(p=0.25),
+            monai.transforms.RandRotate(
+                range_x=(15 * np.pi) / 180, prob=0.1, padding_mode='zeros'),
+            monai.transforms.RandAdjustContrast(gamma=(0.5, 1), prob=0.1),
+            monai.transforms.ToTensor()
+        ])
+
         transform = torchvision.transforms.Compose([
             torchvision.transforms.Resize((400, 400)),
         ])
 
         train_ds = DataSetMRIs(
-            train_folder, transform=transform, num_central_images=args.num_slices)
+            train_folder, transform=transform_aug, num_central_images=args.num_slices)
         valid_ds = DataSetMRIs(
             valid_folder, transform=transform, num_central_images=args.num_slices)
         test_ds = DataSetMRIs(test_folder, transform=transform,
