@@ -20,3 +20,5 @@ class Args:
     loss: str = 'MSE'
     optimizer: str = 'adamw'
     out_name: str = 'resnet'
+    img_size:tuple = (400, 400)
+    use_data_aug: bool = False

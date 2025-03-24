@@ -47,6 +47,27 @@ def create_ds(args, transform_train, transform):
     return train_ds, valid_ds, test_ds
 
 
+def create_transforms(args):
+    transform_valid = torchvision.transforms.Compose([
+        torchvision.transforms.Resize(args.img_size),
+    ])
+    transform_train = monai.transforms.Compose([
+            torchvision.transforms.Resize(args.img_size),
+    ])
+    if args.use_data_aug:
+        transform_train = monai.transforms.Compose([
+            torchvision.transforms.Resize(args.img_size),
+            torchvision.transforms.RandomHorizontalFlip(p=0.35),
+            torchvision.transforms.RandomCrop(args.img_size),
+            torchvision.transforms.RandomPerspective(p=0.35),
+            monai.transforms.RandRotate(
+                range_x=(15 * np.pi) / 180, prob=0.1, padding_mode='zeros'),
+            monai.transforms.RandAdjustContrast(gamma=(0.5, 1), prob=0.2),
+            monai.transforms.ToTensor()
+        ])
+
+    return transform_train, transform_valid
+
 def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     torch.cuda.empty_cache()
@@ -56,23 +77,9 @@ def main(args):
 
         model.to(device)
 
-        transform_train = monai.transforms.Compose([
-            torchvision.transforms.Resize((400, 400)),
-            torchvision.transforms.RandomHorizontalFlip(p=0.25),
-            torchvision.transforms.RandomCrop((400, 400)),
-            torchvision.transforms.RandomPerspective(p=0.25),
-            monai.transforms.RandRotate(
-                range_x=(15 * np.pi) / 180, prob=0.1, padding_mode='zeros'),
-            monai.transforms.RandAdjustContrast(gamma=(0.5, 1), prob=0.1),
-            monai.transforms.ToTensor()
-        ])
+        transform_train, transform = create_transforms(args)
 
-        transform = torchvision.transforms.Compose([
-            torchvision.transforms.Resize((400, 400)),
-        ])
-
-        train_ds, valid_ds, test_ds = create_ds(
-            args, transform_train, transform)
+        train_ds, valid_ds, test_ds = create_ds(args, transform_train, transform)
 
         train_dataloader = DataLoader(
             train_ds, batch_size=args.batch_size, shuffle=True)
