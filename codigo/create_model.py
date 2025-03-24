@@ -9,13 +9,14 @@ class ResNet3D(nn.Module):
         self.model = generate_model(
             model_depth, n_input_channels=n_input_channels, n_classes=fc_layers[0])
 
-        layers = [nn.ReLU()]
+        layers = [nn.ReLU(), nn.Dropout(p=0.5)]
 
         for i in range(1, len(fc_layers) - 1):
             layers.append(
                 nn.Linear(fc_layers[i - 1], fc_layers[i])
             )
             layers.append(nn.ReLU())
+            layers.append(nn.Dropout(p=0.5))
             # layers.append(nn.BatchNorm1d(fc_layers[i]))
 
         layers.append(nn.Linear(fc_layers[-2], fc_layers[-1]))
