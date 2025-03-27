@@ -81,7 +81,12 @@ class DataSetMRIs(Dataset):
             min_val = slice_2d.min()
             max_val = slice_2d.max()
 
-            rescaled = 255 * (slice_2d - min_val) / (max_val - min_val)
+            denominator = max_val - min_val
+
+            if np.isclose(denominator, 0.0):
+                denominator = 1
+
+            rescaled = 255 * (slice_2d - min_val) / denominator
             rescaled = np.uint8(rescaled)
 
             ret, otsu_thresholded = cv2.threshold(

@@ -52,7 +52,7 @@ def create_transforms(args):
         torchvision.transforms.Resize(args.img_size),
     ])
     transform_train = monai.transforms.Compose([
-            torchvision.transforms.Resize(args.img_size),
+        torchvision.transforms.Resize(args.img_size),
     ])
     if args.use_data_aug:
         transform_train = monai.transforms.Compose([
@@ -68,6 +68,7 @@ def create_transforms(args):
 
     return transform_train, transform_valid
 
+
 def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     torch.cuda.empty_cache()
@@ -79,7 +80,8 @@ def main(args):
 
         transform_train, transform = create_transforms(args)
 
-        train_ds, valid_ds, test_ds = create_ds(args, transform_train, transform)
+        train_ds, valid_ds, test_ds = create_ds(
+            args, transform_train, transform)
 
         train_dataloader = DataLoader(
             train_ds, batch_size=args.batch_size, shuffle=True)

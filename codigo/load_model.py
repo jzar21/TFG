@@ -46,12 +46,14 @@ def load_pretrained_model(args, device):
 
     print(f'Depth: {model_depth}')
     if not args.from_scratch:
-        # model = torch.load(args.model_path)
-        checkpoint = torch.load(args.model_path)
-        state_dict = checkpoint['state_dict']
-        state_dict = {k.replace('module.', 'model.')
-                                : v for k, v in state_dict.items()}
-        model.load_state_dict(state_dict, strict=False)
+        if args.pretrain_med_net:
+            checkpoint = torch.load(args.model_path)
+            state_dict = checkpoint['state_dict']
+            state_dict = {k.replace('module.', 'model.')
+                                    : v for k, v in state_dict.items()}
+            model.load_state_dict(state_dict, strict=False)
+        else:
+            model = torch.load(args.model_path, weights_only=False)
 
     freeze_bn_layers(model)
     # replace_bn_with_instancenorm(model)
