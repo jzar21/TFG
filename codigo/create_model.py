@@ -24,11 +24,21 @@ class ResNet3D(nn.Module):
         layers.append(nn.Linear(fc_layers[-2], fc_layers[-1]))
 
         self.fc = nn.Sequential(*layers)
+        self.fc_part = nn.Sequential(
+            nn.Linear(9, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, 1024),
+            nn.Sigmoid(),
+        )
 
-    def forward(self, x):
-        x = self.model(x)
-        x = self.fc(x)
-        return x
+    def forward(self, x: tuple):
+        img, metadata = x
+        img = self.model(img)
+        metadata = self.fc_part(metadata)
+
+        return self.fc(img * metadata)
 
 
 class ResNet3DBinaryClasificacion(ResNet3D):

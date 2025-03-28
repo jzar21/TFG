@@ -16,11 +16,12 @@ def train_one_epoch(model, dataloader_train,
                     optimizer, loss_function, scheduler, device):
     model.train()
 
-    for i, (im, label) in enumerate(dataloader_train):
-        im, label = im.to(device), label.to(device)
+    for i, (im, label, metadata) in enumerate(dataloader_train):
+        im, label, metadata = im.to(device), label.to(
+            device), metadata.to(device)
 
         optimizer.zero_grad()
-        outputs = model(im).view(-1)  # (batch_size, 1) a (batch_size)
+        outputs = model((im, metadata)).view(-1)
         loss = loss_function(outputs, label)
         loss.backward()
         optimizer.step()
