@@ -40,7 +40,7 @@ def load_pretrained_model(args, device):
 
         return None
 
-    model = ResNet3D(model_depth).to(device)
+    model = ResNet3D(model_depth, fc_layers=args.fc_layers_arch).to(device)
     if args.classification:
         model = ResNet3DBinaryClasificacion(model_depth).to(device)
 

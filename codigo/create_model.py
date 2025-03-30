@@ -29,7 +29,7 @@ class ResNet3D(nn.Module):
             nn.ReLU(),
             nn.Linear(512, 512),
             nn.ReLU(),
-            nn.Linear(512, 1024),
+            nn.Linear(512, fc_layers[0]),
             nn.Sigmoid(),
         )
 
