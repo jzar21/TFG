@@ -150,12 +150,12 @@ class DataSetMRIs(Dataset):
         return torch.tensor(data, dtype=torch.float32)
 
     def __clean_metadata(self, metadata):
-        if 'F' in metadata[0]:
+        if not isinstance(metadata[0], int) and 'F' in metadata[0]:
             metadata[0] = 0
         else:
             metadata[0] = 1
 
-        if 'R' in metadata[-2]:
+        if not isinstance(metadata[-2], int) and 'R' in metadata[-2]:
             metadata[-2] = 0
         else:
             metadata[-2] = 1

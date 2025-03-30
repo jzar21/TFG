@@ -35,10 +35,12 @@ def get_predictions(model, dataloader, device):
     model.eval()
     predicted = []
     reals = []
-    for im, label in dataloader:
-        im, label = im.to(device), label.to(device)
+    for im, label, metadata in dataloader:
+        im, label, metadata = im.to(device), label.to(
+            device), metadata.to(device)
         with torch.no_grad():
-            prediction = model(im).view(-1).detach().cpu().numpy().tolist()
+            prediction = model(
+                (im, metadata)).view(-1).detach().cpu().numpy().tolist()
             real = label.cpu().numpy().tolist()
 
         predicted.extend(prediction)

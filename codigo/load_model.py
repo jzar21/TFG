@@ -59,10 +59,10 @@ def load_pretrained_model(args, device):
     # replace_bn_with_instancenorm(model)
     model = model.to(device)
 
-    print('-' * 50)
-    print(
-        f'Summary for entrance of size (1, 20, 100, 100), depth {model_depth}')
-    print(summary(model, (1, 20, 100, 100)))
-    print('-' * 50)
+    # print('-' * 50)
+    # print(
+    #     f'Summary for entrance of size (1, 20, 100, 100), depth {model_depth}')
+    # print(summary(model, (1, 1, 20, 100, 100)))
+    # print('-' * 50)
 
     return model, model_depth
