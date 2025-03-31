@@ -40,17 +40,18 @@ def load_pretrained_model(args, device):
 
         return None
 
-    model = ResNet3D(model_depth, fc_layers=args.fc_layers_arch).to(device)
+    model = ResNet3D(model_depth, fc_layers=args.fc_layers_arch,
+                     dropout=args.dropout).to(device)
     if args.classification:
-        model = ResNet3DBinaryClasificacion(model_depth).to(device)
+        model = ResNet3DBinaryClasificacion(model_depth, fc_layers=args.fc_layers_arch,
+                                            dropout=args.dropout).to(device)
 
     print(f'Depth: {model_depth}')
     if not args.from_scratch:
         if args.pretrain_med_net:
             checkpoint = torch.load(args.model_path)
             state_dict = checkpoint['state_dict']
-            state_dict = {k.replace('module.', 'model.')
-                                    : v for k, v in state_dict.items()}
+            state_dict = {k.replace('module.', 'model.'): v for k, v in state_dict.items()}
             model.load_state_dict(state_dict, strict=False)
         else:
             model = torch.load(args.model_path, weights_only=False)

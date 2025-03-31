@@ -25,5 +25,6 @@
     "rot_degree": 10.0,
     "rot_prob": 0.2,
     "contrast_gamma": [0.5, 1],
-    "contrast_prob": 0.2
-  }
+    "contrast_prob": 0.2,
+    "dropout": false
+}

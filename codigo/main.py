@@ -138,6 +138,7 @@ if __name__ == '__main__':
         data = json.load(f)
 
     data['contrast_gamma'] = tuple(data['contrast_gamma'])
+    data['img_size'] = tuple(data['img_size'])
 
     args = Args(**data)
     for key, val in vars(args).items():

@@ -30,3 +30,4 @@ class Args:
     rot_prob: float = 0.2
     contrast_gamma: tuple = (0.5, 1)
     contrast_prob: float = 0.2
+    dropout: bool = False
