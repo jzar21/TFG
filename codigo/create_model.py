@@ -26,7 +26,7 @@ class ResNet3D(nn.Module):
 
         self.fc = nn.Sequential(*layers)
         self.fc_part = nn.Sequential(
-            nn.Linear(9, 512),
+            nn.Linear(11, 512),
             nn.ReLU(),
             nn.Linear(512, 512),
             nn.ReLU(),
