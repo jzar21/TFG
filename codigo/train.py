@@ -139,6 +139,8 @@ def train(model, train_loader, valid_loader, loss_function, optimizer, scheduler
 
         gc.collect()
 
+    early_stoper.load_best_model(model)
+
     print(f"Train completed")
 
     return train_metrics, valid_metrics

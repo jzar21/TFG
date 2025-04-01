@@ -43,9 +43,10 @@ class ResNet3D(nn.Module):
 
 
 class ResNet3DBinaryClasificacion(ResNet3D):
-    def __init__(self, model_depth=18, n_input_channels=1, fc_layers=[1024, 512, 256, 1]):
+    def __init__(self, model_depth=18, n_input_channels=1, fc_layers=[1024, 512, 256, 1],
+                 dropout: bool = False):
         fc_layers[-1] = 1
-        super().__init__(model_depth, n_input_channels, fc_layers)
+        super().__init__(model_depth, n_input_channels, fc_layers, dropout)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):

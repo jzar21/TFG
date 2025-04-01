@@ -131,6 +131,8 @@ class DataSetMRIs(Dataset):
             "0018|0050",  # SliceThickness
             "0018|0087",  # MagneticFieldStrength
             "0018|0084",  # ImagingFrequency
+            "0010|1020",  # PatientSize
+            "0010|1030",  # PatientWeight
             "0018|0080",  # RepetitionTime
             "0018|0081",  # EchoTime
             "0020|0060",  # Laterality
