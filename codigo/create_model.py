@@ -52,7 +52,7 @@ class ResNet3DBinaryClasificacion(ResNet3D):
         super().__init__(model_depth, n_input_channels, fc_layers, dropout)
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, x):
-        x = super().forward(x)
+    def forward(self, img, metadata):
+        x = super().forward(img, metadata)
         x = self.sigmoid(x)
         return x
