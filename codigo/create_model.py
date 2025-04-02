@@ -9,35 +9,38 @@ class ResNet3D(nn.Module):
         self.model = generate_model(
             model_depth, n_input_channels=n_input_channels, n_classes=fc_layers[0])
 
-        layers = [nn.ReLU()]
-        if dropout:
-            layers.append(nn.Dropout(p=0.5))
+        layers = [nn.Linear(self.model.fc.in_features, fc_layers[0])]
 
-        for i in range(1, len(fc_layers) - 1):
-            layers.append(
-                nn.Linear(fc_layers[i - 1], fc_layers[i])
-            )
+        if len(fc_layers) > 1:
             layers.append(nn.ReLU())
             if dropout:
                 layers.append(nn.Dropout(p=0.5))
-            # layers.append(nn.BatchNorm1d(fc_layers[i]))
 
-        layers.append(nn.Linear(fc_layers[-2], fc_layers[-1]))
+            for i in range(1, len(fc_layers) - 1):
+                layers.append(
+                    nn.Linear(fc_layers[i - 1], fc_layers[i])
+                )
+                layers.append(nn.ReLU())
+                # layers.append(nn.BatchNorm1d(fc_layers[i]))
+                if dropout:
+                    layers.append(nn.Dropout(p=0.5))
+
+            layers.append(nn.Linear(fc_layers[-2], fc_layers[-1]))
 
         self.fc = nn.Sequential(*layers)
-        self.fc_part = nn.Sequential(
+        self.metadata_mlp = nn.Sequential(
             nn.Linear(11, 512),
             nn.ReLU(),
             nn.Linear(512, 512),
             nn.ReLU(),
-            nn.Linear(512, fc_layers[0]),
+            nn.Linear(512, self.model.fc.in_features),
             nn.Sigmoid(),
         )
+        self.model.fc = nn.Identity()
 
-    def forward(self, x: tuple):
-        img, metadata = x
+    def forward(self, img, metadata):
         img = self.model(img)
-        metadata = self.fc_part(metadata)
+        metadata = self.metadata_mlp(metadata)
 
         return self.fc(img * metadata)
 
