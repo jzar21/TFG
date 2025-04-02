@@ -21,7 +21,7 @@ def train_one_epoch(model, dataloader_train,
             device), metadata.to(device)
 
         optimizer.zero_grad()
-        outputs = model((im, metadata)).view(-1)
+        outputs = model(im, metadata).view(-1)
         loss = loss_function(outputs, label)
         loss.backward()
         optimizer.step()
@@ -40,7 +40,7 @@ def get_predictions(model, dataloader, device):
             device), metadata.to(device)
         with torch.no_grad():
             prediction = model(
-                (im, metadata)).view(-1).detach().cpu().numpy().tolist()
+                im, metadata).view(-1).detach().cpu().numpy().tolist()
             real = label.cpu().numpy().tolist()
 
         predicted.extend(prediction)

@@ -3,7 +3,7 @@ import sys
 import torch.nn as nn
 from create_model import *
 import torch
-from torchsummary import summary
+from torchinfo import summary
 
 
 def freeze_bn_layers(model):
@@ -51,7 +51,8 @@ def load_pretrained_model(args, device):
         if args.pretrain_med_net:
             checkpoint = torch.load(args.model_path)
             state_dict = checkpoint['state_dict']
-            state_dict = {k.replace('module.', 'model.'): v for k, v in state_dict.items()}
+            state_dict = {k.replace('module.', 'model.')
+                                    : v for k, v in state_dict.items()}
             model.load_state_dict(state_dict, strict=False)
         else:
             model = torch.load(args.model_path, weights_only=False)
@@ -60,10 +61,11 @@ def load_pretrained_model(args, device):
     # replace_bn_with_instancenorm(model)
     model = model.to(device)
 
-    # print('-' * 50)
-    # print(
-    #     f'Summary for entrance of size (1, 20, 100, 100), depth {model_depth}')
-    # print(summary(model, (1, 1, 20, 100, 100)))
-    # print('-' * 50)
+    print('-' * 50)
+    print(
+        f'Summary for entrance of size (1, 20, 100, 100), (1, 11), depth {model_depth}')
+    print(summary(model, [(1, 1, 20, 100, 100), (1, 11)], device='cpu',
+                  dtypes=[torch.float, torch.float], depth=4))
+    print('-' * 50)
 
     return model, model_depth

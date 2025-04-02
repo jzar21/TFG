@@ -38,7 +38,7 @@ def plot_predictions(model, dataloader, title, save_path, device):
 
         with torch.no_grad():
             predicted.extend(
-                model((im, metadata)).view(-1).detach().cpu().numpy().tolist())
+                model(im, metadata).view(-1).detach().cpu().numpy().tolist())
             reals.extend(label.cpu().numpy().tolist())
 
     plt.scatter(reals, predicted, s=8)
@@ -62,7 +62,7 @@ def plot_confusion(model, dataloader, title, save_path, device):
 
         with torch.no_grad():
             predicted.extend(
-                model((im, metadata)).view(-1).detach().cpu().numpy().tolist())
+                model(im, metadata).view(-1).detach().cpu().numpy().tolist())
             reals.extend(label.cpu().numpy().tolist())
 
     predicted = np.array(predicted)
