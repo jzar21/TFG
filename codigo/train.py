@@ -141,7 +141,16 @@ def train(model, train_loader, valid_loader, loss_function, optimizer, scheduler
 
     early_stoper.load_best_model(model)
 
-    print(f"Train completed")
+    print("Train completed")
+    print("Best model summary")
+    train_evaluation = evaluate_loader(model, train_loader, device, regresion)
+    valid_evaluation = evaluate_loader(model, valid_loader, device, regresion)
+
+    for item, values in train_evaluation.items():
+        print(f'Train {item}: {values}')
+
+    for item, values in valid_evaluation.items():
+        print(f'Valid {item}: {values}')
 
     return train_metrics, valid_metrics
 
