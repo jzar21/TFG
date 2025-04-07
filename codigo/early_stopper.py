@@ -1,3 +1,6 @@
+import copy
+
+
 class EarlyStopping:
     def __init__(self, patience=5, delta=0):
         self.patience = patience
@@ -11,7 +14,7 @@ class EarlyStopping:
 
         if self.best_score is None or score < self.best_score - self.delta:
             self.best_score = score
-            self.best_model_wts = model.state_dict()
+            self.best_model_wts = copy.deepcopy(model.state_dict())
             self.counter = 0
         else:
             self.counter += 1
