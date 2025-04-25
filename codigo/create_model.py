@@ -1,3 +1,5 @@
+from monai.networks.nets import DenseNet121, DenseNet169, DenseNet201
+import monai
 from resnets_3d.models.resnet import generate_model
 import torch.nn as nn
 
@@ -56,3 +58,73 @@ class ResNet3DBinaryClasificacion(ResNet3D):
         x = super().forward(img, metadata)
         x = self.sigmoid(x)
         return x
+
+
+class DenseNet(nn.Module):
+    def __init__(self, depth: int = 121, n_input_channels=1, fc_layers=[1024, 512, 256, 1],
+                 dropout: bool = True, batch_norm: bool = True, use_metadata: bool = True):
+        super().__init__()
+        self.use_metadata = use_metadata
+        if depth == 121:
+            self.model = DenseNet121(
+                spatial_dims=3,
+                in_channels=n_input_channels,
+                out_channels=1
+            )
+        elif depth == 169:
+            self.model = DenseNet169(
+                spatial_dims=3,
+                in_channels=n_input_channels,
+                out_channels=1
+            )
+        elif depth == 201:
+            self.model = DenseNet201(
+                spatial_dims=3,
+                in_channels=n_input_channels,
+                out_channels=1
+            )
+        else:
+            raise ValueError('Depth not valid')
+
+        in_features = self.model.class_layers[-1].in_features
+        self.model.class_layers = self.model.class_layers[:-1]  # erase last fc
+        layers = [nn.Linear(in_features, fc_layers[0])]
+
+        if len(fc_layers) > 1:
+            layers.append(nn.ReLU())
+            if batch_norm:
+                layers.append(nn.BatchNorm1d(fc_layers[0]))
+            if dropout:
+                layers.append(nn.Dropout(p=0.5))
+
+            for i in range(1, len(fc_layers) - 1):
+                layers.append(
+                    nn.Linear(fc_layers[i - 1], fc_layers[i])
+                )
+                layers.append(nn.ReLU())
+                if batch_norm:
+                    layers.append(nn.BatchNorm1d(fc_layers[i]))
+                if dropout:
+                    layers.append(nn.Dropout(p=0.5))
+
+            layers.append(nn.Linear(fc_layers[-2], fc_layers[-1]))
+
+        self.fc = nn.Sequential(*layers)
+        self.metadata_mlp = nn.Sequential(
+            nn.Linear(11, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, in_features),
+            nn.Sigmoid(),
+        )
+
+    def forward(self, img, metadata):
+        if not self.use_metadata:
+            img = self.model(img)
+            return self.fc(img)
+
+        img = self.model(img)
+        metadata = self.metadata_mlp(metadata)
+
+        return self.fc(img * metadata)
