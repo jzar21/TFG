@@ -75,7 +75,7 @@ def __load_resnet(args, device):
 
 
 def __load_densenet(args, device):
-    match = re.search(r"resnet_(\d+)", args.model_path)
+    match = re.search(r"densenet_(\d+)", args.model_path)
     if match:
         model_depth = int(match.group(1))
     else:
