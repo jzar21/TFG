@@ -60,7 +60,7 @@ def __load_resnet(args, device):
         if args.pretrain_med_net:
             checkpoint = torch.load(args.model_path)
             state_dict = checkpoint['state_dict']
-            state_dict = {k.replace('module.', 'model.')                          : v for k, v in state_dict.items()}
+            state_dict = {k.replace('module.', 'model.'): v for k, v in state_dict.items()}
             model.load_state_dict(state_dict, strict=False)
         else:
             model = torch.load(args.model_path, weights_only=False)
@@ -84,27 +84,19 @@ def __load_densenet(args, device):
 
         return None, None
 
+    model = DenseNet(
+        model_depth,
+        fc_layers=args.fc_layers_densenet,
+        dropout=args.use_dropout_densenet,
+        batch_norm=args.use_bn_densenet,
+        use_metadata=args.use_metadata_densenet
+    ).to(device)
     if args.from_scratch:
-
-        model = DenseNet(
-            model_depth,
-            args.fc_layers_arch_densenet,
-            dropout=args.use_dropout_densenet,
-            batch_norm=args.use_bn_densenet,
-            use_metadata=args.use_metadata_densenet
-        ).to(device)
 
         __print_model(model, model_depth)
 
         return model, model_depth
 
-    model = DenseNet(
-        model_depth,
-        args.fc_layers_arch_densenet,
-        dropout=args.use_dropout_densenet,
-        batch_norm=args.use_bn_densenet,
-        use_metadata=args.use_metadata_densenet
-    )
     model.load_state_dict(torch.load(args.model_path))
 
     model = model.to(device)
