@@ -60,10 +60,13 @@ def __load_resnet(args, device):
         if args.pretrain_med_net:
             checkpoint = torch.load(args.model_path)
             state_dict = checkpoint['state_dict']
-            state_dict = {k.replace('module.', 'model.'): v for k, v in state_dict.items()}
+            state_dict = {k.replace('module.', 'model.')
+                                    : v for k, v in state_dict.items()}
             model.load_state_dict(state_dict, strict=False)
         else:
             model = torch.load(args.model_path, weights_only=False)
+            # pretrained = torch.load(args.model_path, weights_only=False)
+            # model.load_state_dict(pretrained.state_dict(), strict=False)
 
     freeze_bn_layers(model)
     # replace_bn_with_instancenorm(model)
@@ -97,7 +100,11 @@ def __load_densenet(args, device):
 
         return model, model_depth
 
-    model.load_state_dict(torch.load(args.model_path))
+    model.load_state_dict(torch.load(
+        args.model_path, weights_only=False).state_dict()
+    )
+
+    __print_model(model, model_depth)
 
     model = model.to(device)
 
