@@ -1,28 +1,72 @@
-# Deep Learning for age estimation with in knee MRIs
+# Development of a Deep Learning-Based System for Age Estimation Using Radiological Knee Images
 
 <div>
   <a href="https://github.com/jzar21/TFG/blob/main/LICENSE">
     <img alt="Code License" src="https://img.shields.io/github/license/jzar21/TFG"/>
   </a>
 
-<img src="https://img.shields.io/pypi/pyversions/torch"/>
-
+  <img src="https://img.shields.io/pypi/pyversions/torch"/>
 </div>
 
-## 1. Introduction
+## Description
 
-This is the repository for my "Trabajo Fin de Grado" of the University of Granada.
+This repository contains the code and resources related to my Bachelor’s Thesis at the University of Granada. The main goal of the project is to develop a deep learning model capable of estimating an individual's age from radiological images of the knee.
 
-## 2. How use it
+## Requirements
 
-In the first instance you have to install the necessary dependencies, for this the way I recommend is with `pip` following the following commands:
+To run this project, the following dependencies are required:
 
+* Python 3.8 or higher
+* PyTorch
+* scikit-learn
+* numpy
+* matplotlib
+* pandas
+* opencv-python
+
+These dependencies are listed in the `requirements.txt` file.
+
+## Installation
+
+To set up the development environment, follow these steps:
+
+1. Clone this repository:
+
+   ```bash
+   git clone https://github.com/jzar21/TFG.git
+   cd TFG
+   ```
+
+2. Create and activate a virtual environment (recommended using `conda`):
+
+   ```bash
+   python -m venv venv
+   source venv/bin/activate
+   ```
+
+3. Install the dependencies:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+## Usage
+
+To train the model, run the following command:
+
+```bash
+python main.py config.json
 ```
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
 
-## 3. How contribute
+## Contributions
 
-To contribute simply open a pull requerst and it will be reviewed for possible merge 😁.
+Contributions to the project are welcome. If you’d like to collaborate, please follow these steps:
+
+1. Fork this repository.
+2. Create a new branch for your feature or bug fix.
+3. Make your changes and ensure that all tests pass.
+4. Submit a pull request detailing your changes.
+
+## License
+
+This project is licensed under the GNU General Public License v3.0. For more details, see the `LICENSE` file.
