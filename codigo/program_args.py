@@ -31,3 +31,11 @@ class Args:
     contrast_gamma: tuple = (0.5, 1)
     contrast_prob: float = 0.2
     dropout: bool = False
+
+    # DENSENET
+    fc_layers_densenet: list = field(
+        default_factory=lambda: [1024, 1]
+    )
+    use_dropout_densenet: bool = True
+    use_bn_densenet: bool = True
+    use_metadata_densenet: bool = True

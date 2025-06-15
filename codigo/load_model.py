@@ -29,7 +29,16 @@ def replace_bn_with_instancenorm(model):
             replace_bn_with_instancenorm(child)
 
 
-def load_pretrained_model(args, device):
+def __print_model(model, model_depth):
+    print('-' * 50)
+    print(
+        f'Summary for entrance of size (1, 35, 400, 400), (1, 11), depth {model_depth}')
+    print(summary(model, [(1, 1, 35, 400, 400), (1, 11)], device='cpu',
+                  dtypes=[torch.float, torch.float], depth=4))
+    print('-' * 50)
+
+
+def __load_resnet(args, device):
     match = re.search(r"resnet_(\d+)", args.model_path)
 
     if match:
@@ -56,16 +65,56 @@ def load_pretrained_model(args, device):
             model.load_state_dict(state_dict, strict=False)
         else:
             model = torch.load(args.model_path, weights_only=False)
+            # pretrained = torch.load(args.model_path, weights_only=False)
+            # model.load_state_dict(pretrained.state_dict(), strict=False)
 
     freeze_bn_layers(model)
     # replace_bn_with_instancenorm(model)
     model = model.to(device)
 
-    print('-' * 50)
-    print(
-        f'Summary for entrance of size (1, 20, 100, 100), (1, 11), depth {model_depth}')
-    print(summary(model, [(1, 1, 20, 100, 100), (1, 11)], device='cpu',
-                  dtypes=[torch.float, torch.float], depth=4))
-    print('-' * 50)
+    __print_model(model, model_depth)
 
     return model, model_depth
+
+
+def __load_densenet(args, device):
+    match = re.search(r"densenet_(\d+)", args.model_path)
+    if match:
+        model_depth = int(match.group(1))
+    else:
+        print("Model depth not found, please the format: densenet_dethp*",
+              file=sys.stderr)
+
+        return None, None
+
+    model = DenseNet(
+        model_depth,
+        fc_layers=args.fc_layers_densenet,
+        dropout=args.use_dropout_densenet,
+        batch_norm=args.use_bn_densenet,
+        use_metadata=args.use_metadata_densenet
+    ).to(device)
+    if args.from_scratch:
+
+        __print_model(model, model_depth)
+
+        return model, model_depth
+
+    model.load_state_dict(torch.load(
+        args.model_path, weights_only=False).state_dict()
+    )
+
+    __print_model(model, model_depth)
+
+    model = model.to(device)
+
+    return model, model_depth
+
+
+def load_pretrained_model(args, device):
+    if 'resnet' in args.model_path:
+        return __load_resnet(args, device)
+    elif 'densenet' in args.model_path:
+        return __load_densenet(args, device)
+    else:
+        raise ValueError('model architecture unknown')
