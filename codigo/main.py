@@ -57,12 +57,13 @@ def create_transforms(args):
     if args.use_data_aug:
         transform_train = monai.transforms.Compose([
             torchvision.transforms.Resize(args.img_size),
-            torchvision.transforms.RandomHorizontalFlip(p=0.35),
+            torchvision.transforms.RandomHorizontalFlip(p=args.flip_prob),
             torchvision.transforms.RandomCrop(args.img_size),
-            torchvision.transforms.RandomPerspective(p=0.35),
+            torchvision.transforms.RandomPerspective(p=args.perspective_prob),
             monai.transforms.RandRotate(
-                range_x=(15 * np.pi) / 180, prob=0.1, padding_mode='zeros'),
-            monai.transforms.RandAdjustContrast(gamma=(0.5, 1), prob=0.2),
+                range_x=(args.rot_degree * np.pi) / 180, prob=args.rot_prob, padding_mode='zeros'),
+            monai.transforms.RandAdjustContrast(
+                gamma=args.contrast_gamma, prob=args.contrast_prob),
             monai.transforms.ToTensor()
         ])
 
@@ -135,6 +136,9 @@ if __name__ == '__main__':
 
     with open(sys.argv[1], 'r') as f:
         data = json.load(f)
+
+    data['contrast_gamma'] = tuple(data['contrast_gamma'])
+    data['img_size'] = tuple(data['img_size'])
 
     args = Args(**data)
     for key, val in vars(args).items():

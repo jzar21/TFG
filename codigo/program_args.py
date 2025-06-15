@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -23,3 +23,19 @@ class Args:
     img_size: tuple = (400, 400)
     use_data_aug: bool = False
     pretrain_med_net: bool = True
+    fc_layers_arch: list = field(default_factory=lambda: [1024, 512, 256, 1])
+    flip_prob: float = 0.2
+    perspective_prob: float = 0.2
+    rot_degree: float = 10.0
+    rot_prob: float = 0.2
+    contrast_gamma: tuple = (0.5, 1)
+    contrast_prob: float = 0.2
+    dropout: bool = False
+
+    # DENSENET
+    fc_layers_densenet: list = field(
+        default_factory=lambda: [1024, 1]
+    )
+    use_dropout_densenet: bool = True
+    use_bn_densenet: bool = True
+    use_metadata_densenet: bool = True

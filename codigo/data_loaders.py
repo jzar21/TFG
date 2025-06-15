@@ -53,7 +53,7 @@ class DataSetMRIs(Dataset):
         tensor = self.apply_otsu_thresholding(tensor)
         tensor = tensor.unsqueeze(0)
 
-        return tensor, torch.tensor(age)
+        return tensor, torch.tensor(age), self.get_metadata(dicom_img)
 
     def apply_bias_field_corrector(self, tensor):
         corrector_bias = sitk.N4BiasFieldCorrectionImageFilter()
@@ -120,6 +120,58 @@ class DataSetMRIs(Dataset):
         age = float(''.join(filter(str.isdigit, age)))  # 019Y for example
         return age
 
+    def get_metadata(self, dicom_imgs):
+        reader = sitk.ImageFileReader()
+        reader.SetFileName(dicom_imgs[0])
+        reader.LoadPrivateTagsOn()
+        reader.ReadImageInformation()
+
+        usefull_metadata = [
+            "0010|0040",  # sex
+            "0018|0050",  # SliceThickness
+            "0018|0087",  # MagneticFieldStrength
+            "0018|0084",  # ImagingFrequency
+            "0010|1020",  # PatientSize
+            "0010|1030",  # PatientWeight
+            "0018|0080",  # RepetitionTime
+            "0018|0081",  # EchoTime
+            "0020|0060",  # Laterality
+            "0028|0030",  # PixelSpacing
+        ]
+
+        data = []
+
+        for key in usefull_metadata:
+            try:
+                data.append(reader.GetMetaData(key))
+            except:
+                data.append(0)
+
+        data = self.__clean_metadata(data)
+
+        return torch.tensor(data, dtype=torch.float32)
+
+    def __clean_metadata(self, metadata):
+        if not isinstance(metadata[0], int) and 'F' in metadata[0]:
+            metadata[0] = 0
+        else:
+            metadata[0] = 1
+
+        if not isinstance(metadata[-2], int) and 'R' in metadata[-2]:
+            metadata[-2] = 0
+        else:
+            metadata[-2] = 1
+
+        metadata.extend(metadata.pop().split('\\'))
+
+        for i in range(len(metadata)):
+            try:
+                metadata[i] = float(metadata[i].replace(' ', ''))
+            except:
+                pass
+
+        return metadata
+
     def get_k_central_images(self, tensor, num_central_images):
         num_slices = tensor.shape[0]
         if num_slices <= num_central_images:
@@ -149,11 +201,11 @@ class DataSetMRIClassification(DataSetMRIs):
         super().__init__(mri_dir, transform, num_central_images, it)
 
     def __getitem__(self, idx):
-        tensor, age = super().__getitem__(idx)
+        tensor, age, metadata = super().__getitem__(idx)
         older_than_18 = torch.tensor(
             0, dtype=torch.float32) if age >= 18 else torch.tensor(1, dtype=torch.float32)
 
-        return tensor, older_than_18
+        return tensor, older_than_18, metadata
 
 
 def __test():
